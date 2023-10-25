@@ -1,12 +1,120 @@
 <script lang="ts" setup>
-let icons = {
-  left: '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="currentColor"><path d="M13,10c1.1,0,2,1.35,2,3v3.7l10.495-5.772C27.423,9.867,29,10.8,29,13v14c0,2.2-1.577,3.133-3.505,2.072L15,23.3V27c0,1.65-0.9,3-2,3s-2-1.35-2-3V13C11,11.35,11.9,10,13,10z"/></svg>',
-  right:
-    '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="currentColor"><path d="M27,10c-1.1,0-2,1.35-2,3v3.7l-10.495-5.772C12.577,9.867,11,10.8,11,13v14c0,2.2,1.577,3.133,3.505,2.072L25,23.3V27c0,1.65,0.9,3,2,3s2-1.35,2-3V13C29,11.35,28.1,10,27,10z"/></svg>',
-  play: '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="currentColor"><path d="M20,0C8.954,0,0,8.954,0,20c0,11.046,8.954,20,20,20s20-8.954,20-20C40,8.954,31.046,0,20,0z M28.495,21.928l-12.99,7.145C13.577,30.133,12,29.2,12,27V13c0-2.2,1.577-3.133,3.505-2.072l12.99,7.145C30.423,19.133,30.423,20.867,28.495,21.928z"/></svg>',
-  pause:
-    '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="currentColor"><path d="M20,0C8.954,0,0,8.954,0,20c0,11.046,8.954,20,20,20s20-8.954,20-20C40,8.954,31.046,0,20,0z M17,27c0,1.65-0.9,3-2,3s-2-1.35-2-3V13c0-1.65,0.9-3,2-3s2,1.35,2,3V27z M27,27c0,1.65-0.9,3-2,3s-2-1.35-2-3V13c0-1.65,0.9-3,2-3s2,1.35,2,3V27z"/></svg>',
+import { ref, computed } from "vue";
+
+import type { MusicInfo } from "./musicInfo";
+
+const exampleMusicList: MusicInfo[] = [
+  {
+    title: "Born Free",
+    artist: "The Rassle",
+    album: "Introducing",
+    cover: "sample/cover/1.jpg",
+    link: "sample/music/1.mp3",
+  },
+  {
+    title: "hello world",
+    artist: "ShellRaining",
+    album: "none",
+    cover: "sample/cover/1.jpg",
+    link: "sample/music/1.mp3",
+  },
+  {
+    title: "hello world",
+    artist: "ShellRaining",
+    album: "none",
+    cover: "sample/cover/1.jpg",
+    link: "sample/music/1.mp3",
+  },
+  {
+    title: "hello world",
+    artist: "ShellRaining",
+    album: "none",
+    cover: "sample/cover/1.jpg",
+    link: "sample/music/1.mp3",
+  },
+];
+
+const volume = {
+  slience: {
+    id: 0,
+    src: "./icons/volume/slience.svg",
+    alt: "slience",
+  },
+  low: {
+    id: 1,
+    src: "./icons/volume/low.svg",
+    alt: "low",
+  },
+  mid: {
+    id: 2,
+    src: "./icons/volume/mid.svg",
+    alt: "mid",
+  },
+  max: {
+    id: 3,
+    src: "./icons/volume/max.svg",
+    alt: "max",
+  },
 };
+
+const mode = {
+  loopAll: {
+    id: 0,
+    src: "./icons/mode/loopAll.svg",
+    alt: "loop all",
+  },
+  loopSingle: {
+    id: 1,
+    src: "./icons/mode/loopSingle.svg",
+    alt: "loop one",
+  },
+  rand: {
+    id: 2,
+    src: "./icons/mode/rand.svg",
+    alt: "shuffle",
+  },
+};
+
+const playerState = ref({
+  settings: {
+    volume: volume.slience,
+    list: false,
+    mode: mode.loopAll,
+  },
+  playList: exampleMusicList,
+});
+
+const volumeSrc = computed(() => {
+  const path = new URL(playerState.value.settings.volume.src, import.meta.url);
+  return path.href;
+});
+
+const volumeAlt = computed(() => {
+  return playerState.value.settings.volume.alt;
+});
+
+const modeSrc = computed(() => {
+  const path = new URL(playerState.value.settings.mode.src, import.meta.url);
+  return path.href;
+});
+
+const modeAlt = computed(() => {
+  return playerState.value.settings.mode.alt;
+});
+
+function toggleVolume() {
+  const curVolume = playerState.value.settings.volume;
+  const volumeList = Object.values(volume);
+  playerState.value.settings.volume =
+    volumeList[(curVolume.id + 1) % volumeList.length];
+}
+
+function toggleMode() {
+  const curMode = playerState.value.settings.mode;
+  const modeList = Object.values(mode);
+  playerState.value.settings.mode =
+    modeList[(curMode.id + 1) % modeList.length];
+}
 </script>
 
 <template>
@@ -20,21 +128,32 @@ let icons = {
       </div>
       <div class="music-control"></div>
       <div class="settings">
-        <div class="music-control-btn mode">
-          <img src="./icons/none.svg" alt="slience" />
+        <div class="player-settings-btn volume" @click="toggleVolume">
+          <img :src="volumeSrc" :alt="volumeAlt" />
         </div>
-        <div class="music-control-btn list">
-          <img src="./icons/list.svg" alt="list" />
+        <div class="player-settings-btn mode" @click="toggleMode">
+          <img :src="modeSrc" :alt="modeAlt" />
         </div>
-        <div class="music-control-btn volume">
-          <img src="./icons/loop_all.svg" alt="volume" />
+        <div
+          class="player-settings-btn list"
+          @click="playerState.settings.list = !playerState.settings.list"
+        >
+          <img src="./icons/list/list.svg" alt="list" />
         </div>
       </div>
       <div class="music-progress"></div>
     </div>
     <div class="sp-info"></div>
-    <div class="sp-list"></div>
-    <div class="sp-lyric"></div>
+    <ul :class="['sp-list', { 'sp-list-show': playerState.settings.list }]">
+      <li class="music-items" v-for="(music, i) in playerState.playList">
+        <span class="item-index">{{ i }}</span>
+        <span class="item-title">{{ music.title }}</span>
+        <span class="item-artist">{{ music.artist }}</span>
+      </li>
+    </ul>
+    <div class="sp-lyric">
+      <span>纯音乐，请欣赏</span>
+    </div>
   </div>
 </template>
 
@@ -66,9 +185,7 @@ let icons = {
   height: var(--cover-size);
   width: var(--cover-size);
   transition: background 0.3s;
-  background: var(--SPlayer-gray)
-    url(data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAAA8AAD/4QMqaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjUtYzAyMSA3OS4xNTQ5MTEsIDIwMTMvMTAvMjktMTE6NDc6MTYgICAgICAgICI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBob3Rvc2hvcCBDQyAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NTNERjEzRjQzMDQzMTFFOEI5NkQ5NTkwMTU2NDBFMzUiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NTNERjEzRjUzMDQzMTFFOEI5NkQ5NTkwMTU2NDBFMzUiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1M0RGMTNGMjMwNDMxMUU4Qjk2RDk1OTAxNTY0MEUzNSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1M0RGMTNGMzMwNDMxMUU4Qjk2RDk1OTAxNTY0MEUzNSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pv/uACZBZG9iZQBkwAAAAAEDABUEAwYKDQAABu4AAAdjAAAJgAAAC1D/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)
-    center/cover;
+  background: var(--SPlayer-gray) url(/public/default_cover.jpeg) center/cover;
 }
 
 .music-info {
@@ -96,7 +213,7 @@ let icons = {
   width: 100px;
 }
 
-.music-control-btn {
+.player-settings-btn {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -105,9 +222,82 @@ let icons = {
   height: 2em;
 }
 
-.music-control-btn > img {
+.player-settings-btn > img {
   fill: var(--SPlayer-gray);
   width: 1.5em;
   height: 1.5em;
+  cursor: pointer;
+}
+
+.sp-list {
+  max-height: 0;
+  overflow: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  transition: max-height 0.3s;
+  border-bottom: 1px solid #eee;
+}
+
+.sp-list-show {
+  /* TODO: why 15em */
+  /* max-height: 15em; */
+  max-height: 50vh;
+}
+
+.music-items {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0.75em 1em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition:
+    background 0.3s,
+    padding 0.3s;
+}
+
+.music-items:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.music-items:nth-child(even) {
+  background: #fff;
+}
+
+.music-items:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.item-index {
+  margin-right: 0.75em;
+}
+
+.item-title {
+  margin: 0 0.5em;
+}
+
+.item-title:after {
+  content: "-";
+  margin: 0 0.25em;
+}
+
+.item-artist {
+  opacity: 0.6;
+}
+
+.sp-lyric {
+  color: #666;
+  text-align: center;
+}
+
+.sp-lyric > span {
+  padding: 1em;
+  display: block;
+  overflow: hidden;
+  line-height: 1em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 </style>

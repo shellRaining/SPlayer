@@ -1,5 +1,5 @@
 {
-  "files": [],
+  "files": ["**/*.ts"],
   "references": [
     {
       "path": "./tsconfig.node.json"
