@@ -82,6 +82,11 @@ const playerState = ref({
     mode: mode.loopAll,
   },
   playList: exampleMusicList,
+  // TODO: need check whether it is necessary
+  curMusicInfo: {
+    musicInfo: {},
+    musicTime: "00:00",
+  },
 });
 
 const volumeSrc = computed(() => {
@@ -121,21 +126,31 @@ function toggleMode() {
   <div class="container">
     <div class="sp-header">
       <div class="music-cover"></div>
-      <div class="music-time"></div>
+      <div class="music-time">{{ playerState.curMusicInfo.musicTime }}</div>
       <div class="music-info">
         <h2 class="title">欢迎使用 ShellRaining Player</h2>
         <p class="artist">ShellRaining</p>
       </div>
-      <div class="music-control"></div>
+      <div class="music-control">
+        <div class="control-btn prev">
+          <img src="./icons/control/prev.svg" alt="prev" />
+        </div>
+        <div class="control-btn play">
+          <img src="./icons/control/play.svg" alt="play" />
+        </div>
+        <div class="control-btn next">
+          <img src="./icons/control/next.svg" alt="next" />
+        </div>
+      </div>
       <div class="settings">
-        <div class="player-settings-btn volume" @click="toggleVolume">
+        <div class="settings-btn volume" @click="toggleVolume">
           <img :src="volumeSrc" :alt="volumeAlt" />
         </div>
-        <div class="player-settings-btn mode" @click="toggleMode">
+        <div class="settings-btn mode" @click="toggleMode">
           <img :src="modeSrc" :alt="modeAlt" />
         </div>
         <div
-          class="player-settings-btn list"
+          class="settings-btn list"
           @click="playerState.settings.list = !playerState.settings.list"
         >
           <img src="./icons/list/list.svg" alt="list" />
@@ -159,7 +174,7 @@ function toggleMode() {
 
 <style scoped>
 .container {
-  --head-height: 60px;
+  --head-height: 4em;
   --cover-size: var(--head-height);
   --SPlayer-gray: #aaa;
   --border-radius: 5px;
@@ -178,6 +193,7 @@ function toggleMode() {
   display: flex;
   height: var(--head-height);
   overflow: hidden;
+  position: relative;
 }
 
 .music-cover {
@@ -185,9 +201,28 @@ function toggleMode() {
   height: var(--cover-size);
   width: var(--cover-size);
   transition: background 0.3s;
-  background: var(--SPlayer-gray) url(/public/default_cover.jpeg) center/cover;
+  background: var(--SPlayer-gray) url(/default_cover.jpeg) center/cover;
 }
 
+.music-time {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--head-height);
+  height: var(--head-height);
+  line-height: var(--head-height);
+  text-align: center;
+  color: #fff;
+  opacity: 0; /* TODO 0 */
+  background: rgba(0, 0, 0, 0.5);
+  transition: opacity 0.3s;
+}
+
+.music-time:hover {
+  opacity: 1;
+}
+
+/* music info */
 .music-info {
   flex: 1;
   white-space: nowrap;
@@ -205,6 +240,36 @@ function toggleMode() {
   color: #999;
 }
 
+/* music control */
+.music-control {
+  position: absolute;
+  left: var(--head-height);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  padding: 0.5em;
+  background-color: #fff;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+}
+
+.music-control:hover {
+  opacity: 1;
+}
+
+/* control button */
+.control-btn {
+  color: #3498db;
+  cursor: pointer;
+}
+
+.control-btn > img {
+  width: 2.5em;
+  height: 2.5em;
+}
+
 .settings {
   min-width: 100px;
   display: flex;
@@ -213,7 +278,7 @@ function toggleMode() {
   width: 100px;
 }
 
-.player-settings-btn {
+.settings-btn {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -222,7 +287,7 @@ function toggleMode() {
   height: 2em;
 }
 
-.player-settings-btn > img {
+.settings-btn > img {
   fill: var(--SPlayer-gray);
   width: 1.5em;
   height: 1.5em;
