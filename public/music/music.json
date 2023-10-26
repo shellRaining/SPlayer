@@ -1,0 +1,23 @@
+[
+  {
+    "title": "檻鶴姫",
+    "artist": "霜月はるか",
+    "album": "none",
+    "cover": "../../public/music/0/檻鶴姫.jpg",
+    "link": "../../public/music/0/檻鶴姫.mp3"
+  },
+  {
+    "title": "孤独の海",
+    "artist": "霜月はるか",
+    "album": "none",
+    "cover": "../../public/music/1/Lonely Sea.jpg",
+    "link": "../../public/music/1/Lonely Sea.mp3"
+  },
+  {
+    "title": "夏影 -AIRness-",
+    "artist": "茶太",
+    "album": "none",
+    "cover": "../../public/music/2/夏影 -AIRness.jpg",
+    "link": "../../public/music/2/夏影 -AIRness.mp3"
+  }
+]

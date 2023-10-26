@@ -1,38 +1,10 @@
 <script lang="ts" setup>
 import { ref, computed } from "vue";
 
-import type { MusicInfo } from "./musicInfo";
+import exampleMusicList from "@/../public/music/music.json";
 
-const exampleMusicList: MusicInfo[] = [
-  {
-    title: "Born Free",
-    artist: "The Rassle",
-    album: "Introducing",
-    cover: "sample/cover/1.jpg",
-    link: "sample/music/1.mp3",
-  },
-  {
-    title: "hello world",
-    artist: "ShellRaining",
-    album: "none",
-    cover: "sample/cover/1.jpg",
-    link: "sample/music/1.mp3",
-  },
-  {
-    title: "hello world",
-    artist: "ShellRaining",
-    album: "none",
-    cover: "sample/cover/1.jpg",
-    link: "sample/music/1.mp3",
-  },
-  {
-    title: "hello world",
-    artist: "ShellRaining",
-    album: "none",
-    cover: "sample/cover/1.jpg",
-    link: "sample/music/1.mp3",
-  },
-];
+const player = ref<HTMLAudioElement | null>();
+const cover = ref<HTMLDivElement | null>();
 
 const volume = {
   slience: {
@@ -77,14 +49,22 @@ const mode = {
 
 const playerState = ref({
   settings: {
-    volume: volume.slience,
+    volume: volume.max,
     list: false,
     mode: mode.loopAll,
   },
   playList: exampleMusicList,
   // TODO: need check whether it is necessary
-  curMusicInfo: {
-    musicInfo: {},
+  curMusic: {
+    idx: -1, // used to identify a music, means the index of music in playList, -1 means no music playing
+    stop: true,
+    musicInfo: {
+      title: "",
+      artist: "",
+      album: "",
+      cover: "",
+      link: "",
+    },
     musicTime: "00:00",
   },
 });
@@ -107,39 +87,107 @@ const modeAlt = computed(() => {
   return playerState.value.settings.mode.alt;
 });
 
+const title = computed(() => {
+  const curTitle = playerState.value.curMusic.musicInfo.title;
+  return curTitle == "" ? "欢迎使用 SPlayer" : curTitle;
+});
+
+const artist = computed(() => {
+  const curArtist = playerState.value.curMusic.musicInfo.artist;
+  return curArtist == "" ? "shellRaining" : curArtist;
+});
+
+function playMusic() {
+  if (player.value == null || playerState.value.curMusic.idx == -1) return;
+
+  const curMusic = playerState.value.curMusic;
+  curMusic.stop = false;
+  player.value.play();
+}
+
+function pauseMusic() {
+  if (player.value == null) return;
+
+  const curMusic = playerState.value.curMusic;
+  curMusic.stop = true;
+  player.value.pause();
+}
+
+function toggleMusic() {
+  playerState.value.curMusic.stop ? playMusic() : pauseMusic();
+}
+
 function toggleVolume() {
+  if (player.value == null) return;
+
   const curVolume = playerState.value.settings.volume;
   const volumeList = Object.values(volume);
   playerState.value.settings.volume =
     volumeList[(curVolume.id + 1) % volumeList.length];
+
+  // set the volume of player
+  player.value.volume = curVolume.id / (volumeList.length - 1);
 }
 
 function toggleMode() {
+  // TODO: add logic
   const curMode = playerState.value.settings.mode;
   const modeList = Object.values(mode);
   playerState.value.settings.mode =
     modeList[(curMode.id + 1) % modeList.length];
 }
+
+function selectMusic(idx: number) {
+  console.log(idx);
+  if (idx == playerState.value.curMusic.idx) {
+    toggleMusic();
+  } else {
+    jump(idx);
+  }
+}
+
+function jump(idx: number) {
+  if (player.value == null || cover.value == null) {
+    // TODO: add logic
+    return;
+  }
+  const curMusic = playerState.value.curMusic;
+  curMusic.idx = idx;
+  curMusic.stop = false;
+  curMusic.musicTime = "00:00";
+  curMusic.musicInfo = playerState.value.playList[idx];
+
+  // change the background attr in .music-cover class
+  const coverPath = new URL(curMusic.musicInfo.cover, import.meta.url).href;
+  cover.value.style.backgroundImage = `url(${coverPath})`;
+
+  const musicPath = new URL(curMusic.musicInfo.link, import.meta.url).href;
+  player.value.src = musicPath;
+  player.value.play();
+}
 </script>
 
+<!-- TODO: use json to contain the path and info of svg -->
 <template>
   <div class="container">
     <div class="sp-header">
-      <div class="music-cover"></div>
-      <div class="music-time">{{ playerState.curMusicInfo.musicTime }}</div>
-      <div class="music-info">
-        <h2 class="title">欢迎使用 ShellRaining Player</h2>
-        <p class="artist">ShellRaining</p>
-      </div>
-      <div class="music-control">
-        <div class="control-btn prev">
-          <img src="./icons/control/prev.svg" alt="prev" />
+      <div class="music-cover" ref="cover"></div>
+      <div class="music-time">{{ playerState.curMusic.musicTime }}</div>
+      <div class="info-container">
+        <div class="music-info">
+          <h2 class="title">{{ title }}</h2>
+          <p class="artist">{{ artist }}</p>
         </div>
-        <div class="control-btn play">
-          <img src="./icons/control/play.svg" alt="play" />
-        </div>
-        <div class="control-btn next">
-          <img src="./icons/control/next.svg" alt="next" />
+        <div class="music-control">
+          <div class="control-btn prev">
+            <img src="./icons/control/prev.svg" alt="prev" />
+          </div>
+          <div class="control-btn play" @click="toggleMusic">
+            <img src="./icons/control/play.svg" alt="play" />
+          </div>
+          <div class="control-btn next">
+            <img src="./icons/control/next.svg" alt="next" />
+          </div>
         </div>
       </div>
       <div class="settings">
@@ -160,7 +208,11 @@ function toggleMode() {
     </div>
     <div class="sp-info"></div>
     <ul :class="['sp-list', { 'sp-list-show': playerState.settings.list }]">
-      <li class="music-items" v-for="(music, i) in playerState.playList">
+      <li
+        class="music-items"
+        v-for="(music, i) in playerState.playList"
+        @click="selectMusic(i)"
+      >
         <span class="item-index">{{ i }}</span>
         <span class="item-title">{{ music.title }}</span>
         <span class="item-artist">{{ music.artist }}</span>
@@ -169,6 +221,12 @@ function toggleMode() {
     <div class="sp-lyric">
       <span>纯音乐，请欣赏</span>
     </div>
+    <!-- TODO: fix passed props -->
+    <audio ref="player">
+      <p>
+        你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。
+      </p>
+    </audio>
   </div>
 </template>
 
@@ -222,6 +280,11 @@ function toggleMode() {
   opacity: 1;
 }
 
+.info-container {
+  position: relative;
+  flex: 1;
+}
+
 /* music info */
 .music-info {
   flex: 1;
@@ -243,7 +306,7 @@ function toggleMode() {
 /* music control */
 .music-control {
   position: absolute;
-  left: var(--head-height);
+  left: 0;
   top: 0;
   right: 0;
   bottom: 0;
@@ -276,6 +339,9 @@ function toggleMode() {
   justify-content: center;
   align-items: center;
   width: 100px;
+  /* position: absolute; */
+  /* right: 0; */
+  /* top: 0; */
 }
 
 .settings-btn {
