@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import SPlayer from "./components/SPlayer.vue";
+import SPlayer from './components/SPlayer.vue';
 </script>
 
 <template>
   <div class="display_zoon">
-    <SPlayer class="player"/>
+    <SPlayer class="player" />
   </div>
 </template>
 

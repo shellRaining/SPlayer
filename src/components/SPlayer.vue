@@ -442,9 +442,6 @@ function error() {
   justify-content: center;
   align-items: center;
   width: 100px;
-  /* position: absolute; */
-  /* right: 0; */
-  /* top: 0; */
 }
 
 .settings-btn {
@@ -507,22 +504,40 @@ ul {
   transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
 }
 
+.fade-move,
+.fade-enter-active .music-item,
+.fade-leave-active .music-item {
+  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
 /* 2. 声明进入和离开的状态 */
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  height: 0;
+}
+
+.fade-enter-from .music-item,
+.fade-leave-to .music-item {
+  opacity: 0;
   transform: scaleY(0.01) translate(3em, 0);
 }
 
-.music-item:nth-child(odd) {
+/* 3. 确保离开的项目被移除出了布局流
+      以便正确地计算移动时的动画效果。 */
+.fade-leave-active .music-item {
+  position: absolute;
+}
+
+.item-wrapper:nth-child(odd) {
   background: rgba(0, 0, 0, 0.02);
 }
 
-.music-item:nth-child(even) {
+.item-wrapper:nth-child(even) {
   background: #fff;
 }
 
-.music-item:hover {
+.item-wrapper:hover {
   background: rgba(0, 0, 0, 0.05);
 }
 
