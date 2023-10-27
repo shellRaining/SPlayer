@@ -5,6 +5,7 @@ import exampleMusicList from "@/../public/music/music.json";
 
 const player = ref<HTMLAudioElement | null>();
 const cover = ref<HTMLDivElement | null>();
+const playerList = ref<HTMLUListElement | null>();
 
 const volume = {
   slience: {
@@ -117,6 +118,50 @@ function toggleMusic() {
   playerState.value.curMusic.stop ? playMusic() : pauseMusic();
 }
 
+function prev() {
+  if (player.value == null) return;
+
+  const curMusic = playerState.value.curMusic;
+  if (curMusic.idx == -1) {
+    jump(0);
+    return;
+  }
+
+  const curMode = playerState.value.settings.mode;
+  if (curMode.id == mode.loopAll.id) {
+    jump(
+      (curMusic.idx - 1 + playerState.value.playList.length) %
+        playerState.value.playList.length,
+    );
+  } else if (curMode.id == mode.loopSingle.id) {
+    jump(curMusic.idx);
+  } else {
+    jump(
+      (curMusic.idx - 1 + playerState.value.playList.length) %
+        playerState.value.playList.length,
+    );
+  }
+}
+
+function next() {
+  if (player.value == null) return;
+
+  const curMusic = playerState.value.curMusic;
+  if (curMusic.idx == -1) {
+    jump(0);
+    return;
+  }
+
+  const curMode = playerState.value.settings.mode;
+  if (curMode.id == mode.loopAll.id) {
+    jump((curMusic.idx + 1) % playerState.value.playList.length);
+  } else if (curMode.id == mode.loopSingle.id) {
+    jump(curMusic.idx);
+  } else {
+    jump((curMusic.idx + 1) % playerState.value.playList.length);
+  }
+}
+
 function toggleVolume() {
   if (player.value == null) return;
 
@@ -130,11 +175,31 @@ function toggleVolume() {
 }
 
 function toggleMode() {
-  // TODO: add logic
   const curMode = playerState.value.settings.mode;
   const modeList = Object.values(mode);
   playerState.value.settings.mode =
     modeList[(curMode.id + 1) % modeList.length];
+
+  jump(-1);
+
+  // TODO: not compare two objects directly
+  if (playerState.value.settings.mode.id == mode.loopSingle.id) {
+    playerState.value.playList.sort((v) => v.id);
+  } else if (playerState.value.settings.mode.id == mode.rand.id) {
+    for (let i = playerState.value.playList.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [playerState.value.playList[i], playerState.value.playList[j]] = [
+        playerState.value.playList[j],
+        playerState.value.playList[i],
+      ];
+    }
+  } else {
+  }
+}
+
+function toggleList() {
+  playerState.value.settings.list = !playerState.value.settings.list;
+  playerList.value?.classList.toggle("list-show");
 }
 
 function selectMusic(idx: number) {
@@ -146,9 +211,49 @@ function selectMusic(idx: number) {
   }
 }
 
+function resetPlayer() {
+  if (player.value == null || cover.value == null) return;
+
+  playerState.value.curMusic.idx = -1;
+  playerState.value.curMusic.stop = true;
+  playerState.value.curMusic.musicInfo = {
+    title: "",
+    artist: "",
+    album: "",
+    cover: "",
+    link: "",
+  };
+  playerState.value.curMusic.musicTime = "00:00";
+  player.value.src = "";
+  cover.value?.style.setProperty(
+    "background-image",
+    "url(/default_cover.jpeg)",
+  );
+  player.value?.pause();
+}
+
+function remove(idx: number) {
+  console.log(idx);
+
+  if (player.value == null) return;
+  if (playerState.value.curMusic.idx == -1) {
+    playerState.value.playList.splice(idx, 1);
+    return;
+  }
+  // BUG: need fix
+  if (playerState.value.curMusic.idx == idx) {
+    resetPlayer();
+  }
+  playerState.value.playList.splice(idx, 1);
+}
+
 function jump(idx: number) {
   if (player.value == null || cover.value == null) {
     // TODO: add logic
+    return;
+  }
+  if (idx < 0 || idx >= playerState.value.playList.length) {
+    resetPlayer();
     return;
   }
   const curMusic = playerState.value.curMusic;
@@ -179,13 +284,13 @@ function jump(idx: number) {
           <p class="artist">{{ artist }}</p>
         </div>
         <div class="music-control">
-          <div class="control-btn prev">
+          <div class="control-btn prev" @click="prev">
             <img src="./icons/control/prev.svg" alt="prev" />
           </div>
           <div class="control-btn play" @click="toggleMusic">
             <img src="./icons/control/play.svg" alt="play" />
           </div>
-          <div class="control-btn next">
+          <div class="control-btn next" @click="next">
             <img src="./icons/control/next.svg" alt="next" />
           </div>
         </div>
@@ -197,27 +302,35 @@ function jump(idx: number) {
         <div class="settings-btn mode" @click="toggleMode">
           <img :src="modeSrc" :alt="modeAlt" />
         </div>
-        <div
-          class="settings-btn list"
-          @click="playerState.settings.list = !playerState.settings.list"
-        >
+        <div class="settings-btn list" @click="toggleList">
           <img src="./icons/list/list.svg" alt="list" />
         </div>
       </div>
       <div class="music-progress"></div>
     </div>
     <div class="sp-info"></div>
-    <ul :class="['sp-list', { 'sp-list-show': playerState.settings.list }]">
-      <li
-        class="music-items"
-        v-for="(music, i) in playerState.playList"
-        @click="selectMusic(i)"
-      >
-        <span class="item-index">{{ i }}</span>
-        <span class="item-title">{{ music.title }}</span>
-        <span class="item-artist">{{ music.artist }}</span>
-      </li>
-    </ul>
+    <!-- :class="['sp-list', { 'list-show': playerState.settings.list }]" -->
+    <div ref="playerList" class="sp-list">
+      <TransitionGroup tag="ul" name="fade">
+        <li
+          class="music-items"
+          v-for="(music, i) in playerState.playList"
+          :key="music.id"
+          @click="selectMusic(i)"
+        >
+          <span class="item-index">{{ i }}</span>
+          <span class="item-title">{{ music.title }}</span>
+          <span class="item-artist">{{ music.artist }}</span>
+          <!-- TODO: should stop the event propagation -->
+          <img
+            src="./icons/list/Delete.svg"
+            alt="x"
+            class="item-btn"
+            @click.stop="remove(i)"
+          />
+        </li>
+      </TransitionGroup>
+    </div>
     <div class="sp-lyric">
       <span>纯音乐，请欣赏</span>
     </div>
@@ -360,17 +473,41 @@ function jump(idx: number) {
   cursor: pointer;
 }
 
-.sp-list {
-  max-height: 0;
-  overflow: auto;
+ul {
+  /* clear ul list style */
   list-style: none;
   margin: 0;
   padding: 0;
-  transition: max-height 0.3s;
+}
+
+.sp-list {
+  max-height: 0;
+  overflow: auto;
+  transition: 0.3s;
   border-bottom: 1px solid #eee;
 }
 
-.sp-list-show {
+/* 1. 声明过渡效果 */
+.fade-move,
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
+/* 2. 声明进入和离开的状态 */
+.fade-enter-from,
+.fade-leave-to {
+  /* BUG: need fix */
+  height: 0;
+  opacity: 0;
+  transform: scaleY(0.01) translate(30px, 0);
+}
+
+/* 3. 确保离开的项目被移除出了布局流
+      以便正确地计算移动时的动画效果。 */
+/* .fade-leave-active { } */
+
+.list-show {
   /* TODO: why 15em */
   /* max-height: 15em; */
   max-height: 50vh;
@@ -384,9 +521,7 @@ function jump(idx: number) {
   padding: 0.75em 1em;
   white-space: nowrap;
   text-overflow: ellipsis;
-  transition:
-    background 0.3s,
-    padding 0.3s;
+  /* TODO: how to use my own transition */
 }
 
 .music-items:nth-child(odd) {
@@ -416,11 +551,19 @@ function jump(idx: number) {
 
 .item-artist {
   opacity: 0.6;
+  flex: 1;
+}
+
+.item-btn {
+  border: none;
+  width: 1em;
 }
 
 .sp-lyric {
   color: #666;
   text-align: center;
+  overflow: hidden;
+  transition: height 0.5s ease; /* 这里的0.5s是过渡时间，可以根据需要调整 */
 }
 
 .sp-lyric > span {
