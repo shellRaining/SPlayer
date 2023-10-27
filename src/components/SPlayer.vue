@@ -199,7 +199,6 @@ function toggleList() {
 }
 
 function selectMusic(idx: number) {
-  console.log(idx);
   if (idx == playerState.value.curMusic.idx) {
     toggleMusic();
   } else {
@@ -226,8 +225,6 @@ function resetPlayer() {
 }
 
 function remove(idx: number) {
-  console.log(idx);
-
   if (player.value == null) return;
   if (playerState.value.curMusic.idx == -1) {
     playerState.value.playList.splice(idx, 1);
@@ -262,6 +259,11 @@ function jump(idx: number) {
   const musicPath = new URL(curMusic.musicInfo.link, import.meta.url).href;
   player.value.src = musicPath;
   player.value.play();
+}
+
+function error() {
+  playerState.value.curMusic.musicInfo.title = ':(';
+  playerState.value.curMusic.musicInfo.artist = '播放出错';
 }
 </script>
 
@@ -306,16 +308,18 @@ function jump(idx: number) {
     <div ref="playerList" class="sp-list">
       <TransitionGroup tag="ul" name="fade">
         <li
-          class="music-items"
+          class="item-wrapper"
           v-for="(music, i) in playerState.playList"
           :key="music.id"
           @click="selectMusic(i)"
         >
-          <span class="item-index">{{ i }}</span>
-          <span class="item-title">{{ music.title }}</span>
-          <span class="item-artist">{{ music.artist }}</span>
           <!-- TODO: should stop the event propagation -->
-          <img src="./icons/list/Delete.svg" alt="x" class="item-btn" @click.stop="remove(i)" />
+          <div class="music-item">
+            <span class="item-index">{{ i }}</span>
+            <span class="item-title">{{ music.title }}</span>
+            <span class="item-artist">{{ music.artist }}</span>
+            <img src="./icons/list/Delete.svg" alt="x" class="item-btn" @click.stop="remove(i)" />
+          </div>
         </li>
       </TransitionGroup>
     </div>
@@ -323,7 +327,7 @@ function jump(idx: number) {
       <span>纯音乐，请欣赏</span>
     </div>
     <!-- TODO: fix passed props -->
-    <audio ref="player">
+    <audio ref="player" @ended="next" @error="error">
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
   </div>
@@ -473,33 +477,19 @@ ul {
   border-bottom: 1px solid #eee;
 }
 
-/* 1. 声明过渡效果 */
-.fade-move,
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
-}
-
-/* 2. 声明进入和离开的状态 */
-.fade-enter-from,
-.fade-leave-to {
-  /* BUG: need fix */
-  height: 0;
-  opacity: 0;
-  transform: scaleY(0.01) translate(30px, 0);
-}
-
-/* 3. 确保离开的项目被移除出了布局流
-      以便正确地计算移动时的动画效果。 */
-/* .fade-leave-active { } */
-
 .list-show {
   /* TODO: why 15em */
   /* max-height: 15em; */
   max-height: 50vh;
 }
 
-.music-items {
+.item-wrapper {
+  position: relative;
+  width: 100%;
+  height: 3em;
+}
+
+.music-item {
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -510,15 +500,29 @@ ul {
   /* TODO: how to use my own transition */
 }
 
-.music-items:nth-child(odd) {
+/* 1. 声明过渡效果 */
+.fade-move,
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
+/* 2. 声明进入和离开的状态 */
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scaleY(0.01) translate(3em, 0);
+}
+
+.music-item:nth-child(odd) {
   background: rgba(0, 0, 0, 0.02);
 }
 
-.music-items:nth-child(even) {
+.music-item:nth-child(even) {
   background: #fff;
 }
 
-.music-items:hover {
+.music-item:hover {
   background: rgba(0, 0, 0, 0.05);
 }
 
