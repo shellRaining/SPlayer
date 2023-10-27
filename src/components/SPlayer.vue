@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
 
+import type { PlayerState, Volume, Mode } from './playerInfo';
+
 import exampleMusicList from '@/../public/music/music.json';
 
 const player = ref<HTMLAudioElement | null>();
 const cover = ref<HTMLDivElement | null>();
-const playerList = ref<HTMLUListElement | null>();
 
-const volume = {
+const volume: Record<string, Volume> = {
   slience: {
     id: 0,
     src: './icons/volume/slience.svg',
@@ -30,7 +31,7 @@ const volume = {
   },
 };
 
-const mode = {
+const mode: Record<string, Mode> = {
   loopAll: {
     id: 0,
     src: './icons/mode/loopAll.svg',
@@ -48,25 +49,23 @@ const mode = {
   },
 };
 
-const playerState = ref({
+const playerState = ref<PlayerState>({
+  idx: -1,
+  stop: true,
+  progress: 0,
   settings: {
     volume: volume.max,
     list: false,
     mode: mode.loopAll,
   },
   playList: exampleMusicList,
-  // TODO: need check whether it is necessary
-  curMusic: {
-    idx: -1, // used to identify a music, means the index of music in playList, -1 means no music playing
-    stop: true,
-    musicInfo: {
-      title: '',
-      artist: '',
-      album: '',
-      cover: '',
-      link: '',
-    },
-    musicTime: '00:00',
+  curMusicInfo: {
+    id: -1,
+    title: '',
+    artist: '',
+    album: '',
+    cover: '',
+    link: '',
   },
 });
 
@@ -89,40 +88,37 @@ const modeAlt = computed(() => {
 });
 
 const title = computed(() => {
-  const curTitle = playerState.value.curMusic.musicInfo.title;
+  const curTitle = playerState.value.curMusicInfo.title;
   return curTitle == '' ? '欢迎使用 SPlayer' : curTitle;
 });
 
 const artist = computed(() => {
-  const curArtist = playerState.value.curMusic.musicInfo.artist;
+  const curArtist = playerState.value.curMusicInfo.artist;
   return curArtist == '' ? 'shellRaining' : curArtist;
 });
 
 function playMusic() {
-  if (player.value == null || playerState.value.curMusic.idx == -1) return;
+  if (player.value == null || playerState.value.idx == -1) return;
 
-  const curMusic = playerState.value.curMusic;
-  curMusic.stop = false;
+  playerState.value.stop = false;
   player.value.play();
 }
 
 function pauseMusic() {
   if (player.value == null) return;
 
-  const curMusic = playerState.value.curMusic;
-  curMusic.stop = true;
+  playerState.value.stop = true;
   player.value.pause();
 }
 
 function toggleMusic() {
-  playerState.value.curMusic.stop ? playMusic() : pauseMusic();
+  playerState.value.stop ? playMusic() : pauseMusic();
 }
 
 function prev() {
   if (player.value == null) return;
 
-  const curMusic = playerState.value.curMusic;
-  if (curMusic.idx == -1) {
+  if (playerState.value.idx == -1) {
     jump(0);
     return;
   }
@@ -130,13 +126,15 @@ function prev() {
   const curMode = playerState.value.settings.mode;
   if (curMode.id == mode.loopAll.id) {
     jump(
-      (curMusic.idx - 1 + playerState.value.playList.length) % playerState.value.playList.length
+      (playerState.value.idx - 1 + playerState.value.playList.length) %
+        playerState.value.playList.length
     );
   } else if (curMode.id == mode.loopSingle.id) {
-    jump(curMusic.idx);
+    jump(playerState.value.idx);
   } else {
     jump(
-      (curMusic.idx - 1 + playerState.value.playList.length) % playerState.value.playList.length
+      (playerState.value.idx - 1 + playerState.value.playList.length) %
+        playerState.value.playList.length
     );
   }
 }
@@ -144,62 +142,61 @@ function prev() {
 function next() {
   if (player.value == null) return;
 
-  const curMusic = playerState.value.curMusic;
-  if (curMusic.idx == -1) {
+  if (playerState.value.idx == -1) {
     jump(0);
     return;
   }
 
   const curMode = playerState.value.settings.mode;
-  if (curMode.id == mode.loopAll.id) {
-    jump((curMusic.idx + 1) % playerState.value.playList.length);
+  if (curMode.id == mode.loopAll.id || curMode.id == mode.rand.id) {
+    jump((playerState.value.idx + 1) % playerState.value.playList.length);
   } else if (curMode.id == mode.loopSingle.id) {
-    jump(curMusic.idx);
+    jump(playerState.value.idx);
   } else {
-    jump((curMusic.idx + 1) % playerState.value.playList.length);
+    jump(-1);
   }
+}
+
+function progress() {
+  if (player.value == null) return;
 }
 
 function toggleVolume() {
   if (player.value == null) return;
 
-  const curVolume = playerState.value.settings.volume;
+  let curVolume = playerState.value.settings.volume;
   const volumeList = Object.values(volume);
-  playerState.value.settings.volume = volumeList[(curVolume.id + 1) % volumeList.length];
+  curVolume = volumeList[(curVolume.id + 1) % volumeList.length];
+  playerState.value.settings.volume = curVolume;
 
-  // set the volume of player
   player.value.volume = curVolume.id / (volumeList.length - 1);
 }
 
 function toggleMode() {
-  const curMode = playerState.value.settings.mode;
+  let curMode = playerState.value.settings.mode;
   const modeList = Object.values(mode);
-  playerState.value.settings.mode = modeList[(curMode.id + 1) % modeList.length];
-
-  jump(-1);
+  curMode = modeList[(curMode.id + 1) % modeList.length];
+  playerState.value.settings.mode = curMode;
 
   // TODO: not compare two objects directly
-  if (playerState.value.settings.mode.id == mode.loopSingle.id) {
-    playerState.value.playList.sort((v) => v.id);
-  } else if (playerState.value.settings.mode.id == mode.rand.id) {
-    for (let i = playerState.value.playList.length - 1; i > 0; i--) {
+  const curPlayList = playerState.value.playList;
+  if (curMode.id == mode.loopSingle.id) {
+    curPlayList.sort((v) => v.id);
+  } else if (curMode.id == mode.rand.id) {
+    // shuffle the play list
+    for (let i = curPlayList.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [playerState.value.playList[i], playerState.value.playList[j]] = [
-        playerState.value.playList[j],
-        playerState.value.playList[i],
-      ];
+      [curPlayList[i], curPlayList[j]] = [curPlayList[j], curPlayList[i]];
     }
-  } else {
   }
 }
 
 function toggleList() {
   playerState.value.settings.list = !playerState.value.settings.list;
-  playerList.value?.classList.toggle('list-show');
 }
 
 function selectMusic(idx: number) {
-  if (idx == playerState.value.curMusic.idx) {
+  if (idx == playerState.value.idx) {
     toggleMusic();
   } else {
     jump(idx);
@@ -209,29 +206,29 @@ function selectMusic(idx: number) {
 function resetPlayer() {
   if (player.value == null || cover.value == null) return;
 
-  playerState.value.curMusic.idx = -1;
-  playerState.value.curMusic.stop = true;
-  playerState.value.curMusic.musicInfo = {
+  playerState.value.idx = -1;
+  playerState.value.stop = true;
+  playerState.value.curMusicInfo = {
+    id: -1,
     title: '',
     artist: '',
     album: '',
     cover: '',
     link: '',
   };
-  playerState.value.curMusic.musicTime = '00:00';
+  playerState.value.progress = 0;
   player.value.src = '';
-  cover.value?.style.setProperty('background-image', 'url(/default_cover.jpeg)');
-  player.value?.pause();
+  cover.value.style.setProperty('background-image', 'url(/default_cover.jpeg)');
+  player.value.pause();
 }
 
 function remove(idx: number) {
   if (player.value == null) return;
-  if (playerState.value.curMusic.idx == -1) {
+  if (playerState.value.idx == -1) {
     playerState.value.playList.splice(idx, 1);
     return;
   }
-  // BUG: need fix
-  if (playerState.value.curMusic.idx == idx) {
+  if (playerState.value.idx == idx) {
     resetPlayer();
   }
   playerState.value.playList.splice(idx, 1);
@@ -246,24 +243,23 @@ function jump(idx: number) {
     resetPlayer();
     return;
   }
-  const curMusic = playerState.value.curMusic;
-  curMusic.idx = idx;
-  curMusic.stop = false;
-  curMusic.musicTime = '00:00';
-  curMusic.musicInfo = playerState.value.playList[idx];
+  playerState.value.idx = idx;
+  playerState.value.stop = false;
+  playerState.value.progress = 0;
+  playerState.value.curMusicInfo = playerState.value.playList[idx];
 
   // change the background attr in .music-cover class
-  const coverPath = new URL(curMusic.musicInfo.cover, import.meta.url).href;
+  const coverPath = new URL(playerState.value.curMusicInfo.cover, import.meta.url).href;
   cover.value.style.backgroundImage = `url(${coverPath})`;
 
-  const musicPath = new URL(curMusic.musicInfo.link, import.meta.url).href;
+  const musicPath = new URL(playerState.value.curMusicInfo.link, import.meta.url).href;
   player.value.src = musicPath;
   player.value.play();
 }
 
 function error() {
-  playerState.value.curMusic.musicInfo.title = ':(';
-  playerState.value.curMusic.musicInfo.artist = '播放出错';
+  playerState.value.curMusicInfo.title = ':(';
+  playerState.value.curMusicInfo.artist = '播放出错';
 }
 </script>
 
@@ -272,7 +268,7 @@ function error() {
   <div class="container">
     <div class="sp-header">
       <div class="music-cover" ref="cover"></div>
-      <div class="music-time">{{ playerState.curMusic.musicTime }}</div>
+      <div class="music-time">{{ playerState.progress }}</div>
       <div class="info-container">
         <div class="music-info">
           <h2 class="title">{{ title }}</h2>
@@ -304,8 +300,7 @@ function error() {
       <div class="music-progress"></div>
     </div>
     <div class="sp-info"></div>
-    <!-- :class="['sp-list', { 'list-show': playerState.settings.list }]" -->
-    <div ref="playerList" class="sp-list">
+    <div :class="['sp-list', { 'list-show': playerState.settings.list }]">
       <TransitionGroup tag="ul" name="fade">
         <li
           class="item-wrapper"
@@ -313,7 +308,6 @@ function error() {
           :key="music.id"
           @click="selectMusic(i)"
         >
-          <!-- TODO: should stop the event propagation -->
           <div class="music-item">
             <span class="item-index">{{ i }}</span>
             <span class="item-title">{{ music.title }}</span>
@@ -327,9 +321,10 @@ function error() {
       <span>纯音乐，请欣赏</span>
     </div>
     <!-- TODO: fix passed props -->
-    <audio ref="player" @ended="next" @error="error">
+    <audio ref="player" @ended="next" @error="error" @progress="progress">
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
+    <pre>{{ playerState }}</pre>
   </div>
 </template>
 
