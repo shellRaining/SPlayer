@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ref, computed } from "vue";
+import { ref, computed } from 'vue';
 
-import exampleMusicList from "@/../public/music/music.json";
+import exampleMusicList from '@/../public/music/music.json';
 
 const player = ref<HTMLAudioElement | null>();
 const cover = ref<HTMLDivElement | null>();
@@ -10,41 +10,41 @@ const playerList = ref<HTMLUListElement | null>();
 const volume = {
   slience: {
     id: 0,
-    src: "./icons/volume/slience.svg",
-    alt: "slience",
+    src: './icons/volume/slience.svg',
+    alt: 'slience',
   },
   low: {
     id: 1,
-    src: "./icons/volume/low.svg",
-    alt: "low",
+    src: './icons/volume/low.svg',
+    alt: 'low',
   },
   mid: {
     id: 2,
-    src: "./icons/volume/mid.svg",
-    alt: "mid",
+    src: './icons/volume/mid.svg',
+    alt: 'mid',
   },
   max: {
     id: 3,
-    src: "./icons/volume/max.svg",
-    alt: "max",
+    src: './icons/volume/max.svg',
+    alt: 'max',
   },
 };
 
 const mode = {
   loopAll: {
     id: 0,
-    src: "./icons/mode/loopAll.svg",
-    alt: "loop all",
+    src: './icons/mode/loopAll.svg',
+    alt: 'loop all',
   },
   loopSingle: {
     id: 1,
-    src: "./icons/mode/loopSingle.svg",
-    alt: "loop one",
+    src: './icons/mode/loopSingle.svg',
+    alt: 'loop one',
   },
   rand: {
     id: 2,
-    src: "./icons/mode/rand.svg",
-    alt: "shuffle",
+    src: './icons/mode/rand.svg',
+    alt: 'shuffle',
   },
 };
 
@@ -60,13 +60,13 @@ const playerState = ref({
     idx: -1, // used to identify a music, means the index of music in playList, -1 means no music playing
     stop: true,
     musicInfo: {
-      title: "",
-      artist: "",
-      album: "",
-      cover: "",
-      link: "",
+      title: '',
+      artist: '',
+      album: '',
+      cover: '',
+      link: '',
     },
-    musicTime: "00:00",
+    musicTime: '00:00',
   },
 });
 
@@ -90,12 +90,12 @@ const modeAlt = computed(() => {
 
 const title = computed(() => {
   const curTitle = playerState.value.curMusic.musicInfo.title;
-  return curTitle == "" ? "欢迎使用 SPlayer" : curTitle;
+  return curTitle == '' ? '欢迎使用 SPlayer' : curTitle;
 });
 
 const artist = computed(() => {
   const curArtist = playerState.value.curMusic.musicInfo.artist;
-  return curArtist == "" ? "shellRaining" : curArtist;
+  return curArtist == '' ? 'shellRaining' : curArtist;
 });
 
 function playMusic() {
@@ -130,15 +130,13 @@ function prev() {
   const curMode = playerState.value.settings.mode;
   if (curMode.id == mode.loopAll.id) {
     jump(
-      (curMusic.idx - 1 + playerState.value.playList.length) %
-        playerState.value.playList.length,
+      (curMusic.idx - 1 + playerState.value.playList.length) % playerState.value.playList.length
     );
   } else if (curMode.id == mode.loopSingle.id) {
     jump(curMusic.idx);
   } else {
     jump(
-      (curMusic.idx - 1 + playerState.value.playList.length) %
-        playerState.value.playList.length,
+      (curMusic.idx - 1 + playerState.value.playList.length) % playerState.value.playList.length
     );
   }
 }
@@ -167,8 +165,7 @@ function toggleVolume() {
 
   const curVolume = playerState.value.settings.volume;
   const volumeList = Object.values(volume);
-  playerState.value.settings.volume =
-    volumeList[(curVolume.id + 1) % volumeList.length];
+  playerState.value.settings.volume = volumeList[(curVolume.id + 1) % volumeList.length];
 
   // set the volume of player
   player.value.volume = curVolume.id / (volumeList.length - 1);
@@ -177,8 +174,7 @@ function toggleVolume() {
 function toggleMode() {
   const curMode = playerState.value.settings.mode;
   const modeList = Object.values(mode);
-  playerState.value.settings.mode =
-    modeList[(curMode.id + 1) % modeList.length];
+  playerState.value.settings.mode = modeList[(curMode.id + 1) % modeList.length];
 
   jump(-1);
 
@@ -199,7 +195,7 @@ function toggleMode() {
 
 function toggleList() {
   playerState.value.settings.list = !playerState.value.settings.list;
-  playerList.value?.classList.toggle("list-show");
+  playerList.value?.classList.toggle('list-show');
 }
 
 function selectMusic(idx: number) {
@@ -217,18 +213,15 @@ function resetPlayer() {
   playerState.value.curMusic.idx = -1;
   playerState.value.curMusic.stop = true;
   playerState.value.curMusic.musicInfo = {
-    title: "",
-    artist: "",
-    album: "",
-    cover: "",
-    link: "",
+    title: '',
+    artist: '',
+    album: '',
+    cover: '',
+    link: '',
   };
-  playerState.value.curMusic.musicTime = "00:00";
-  player.value.src = "";
-  cover.value?.style.setProperty(
-    "background-image",
-    "url(/default_cover.jpeg)",
-  );
+  playerState.value.curMusic.musicTime = '00:00';
+  player.value.src = '';
+  cover.value?.style.setProperty('background-image', 'url(/default_cover.jpeg)');
   player.value?.pause();
 }
 
@@ -259,7 +252,7 @@ function jump(idx: number) {
   const curMusic = playerState.value.curMusic;
   curMusic.idx = idx;
   curMusic.stop = false;
-  curMusic.musicTime = "00:00";
+  curMusic.musicTime = '00:00';
   curMusic.musicInfo = playerState.value.playList[idx];
 
   // change the background attr in .music-cover class
@@ -322,12 +315,7 @@ function jump(idx: number) {
           <span class="item-title">{{ music.title }}</span>
           <span class="item-artist">{{ music.artist }}</span>
           <!-- TODO: should stop the event propagation -->
-          <img
-            src="./icons/list/Delete.svg"
-            alt="x"
-            class="item-btn"
-            @click.stop="remove(i)"
-          />
+          <img src="./icons/list/Delete.svg" alt="x" class="item-btn" @click.stop="remove(i)" />
         </li>
       </TransitionGroup>
     </div>
@@ -336,9 +324,7 @@ function jump(idx: number) {
     </div>
     <!-- TODO: fix passed props -->
     <audio ref="player">
-      <p>
-        你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。
-      </p>
+      <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
   </div>
 </template>
@@ -545,7 +531,7 @@ ul {
 }
 
 .item-title:after {
-  content: "-";
+  content: '-';
   margin: 0 0.25em;
 }
 
