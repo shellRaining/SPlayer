@@ -115,48 +115,6 @@ function toggleMusic() {
   playerState.value.stop ? playMusic() : pauseMusic();
 }
 
-function prev() {
-  if (player.value == null) return;
-
-  if (playerState.value.idx == -1) {
-    jump(0);
-    return;
-  }
-
-  const curMode = playerState.value.settings.mode;
-  if (curMode.id == mode.loopAll.id) {
-    jump(
-      (playerState.value.idx - 1 + playerState.value.playList.length) %
-        playerState.value.playList.length
-    );
-  } else if (curMode.id == mode.loopSingle.id) {
-    jump(playerState.value.idx);
-  } else {
-    jump(
-      (playerState.value.idx - 1 + playerState.value.playList.length) %
-        playerState.value.playList.length
-    );
-  }
-}
-
-function next() {
-  if (player.value == null) return;
-
-  if (playerState.value.idx == -1) {
-    jump(0);
-    return;
-  }
-
-  const curMode = playerState.value.settings.mode;
-  if (curMode.id == mode.loopAll.id || curMode.id == mode.rand.id) {
-    jump((playerState.value.idx + 1) % playerState.value.playList.length);
-  } else if (curMode.id == mode.loopSingle.id) {
-    jump(playerState.value.idx);
-  } else {
-    jump(-1);
-  }
-}
-
 function progress() {
   if (player.value == null) return;
 }
@@ -234,6 +192,26 @@ function remove(idx: number) {
   playerState.value.playList.splice(idx, 1);
 }
 
+// jump to the music that idx = current idx + offset(could be negative and out of range)
+function relativeJump(offset: number) {
+  if (player.value == null || playerState.value.idx == -1) return;
+
+  // make sure the target idx is in range
+  const curIdx = playerState.value.idx;
+  const curMode = playerState.value.settings.mode;
+
+  if (curMode.id == mode.loopAll.id || curMode.id == mode.rand.id) {
+    offset %= playerState.value.playList.length;
+    const targetIdx =
+      (curIdx + offset + playerState.value.playList.length) % playerState.value.playList.length;
+    jump(targetIdx);
+  } else if (curMode.id == mode.loopSingle.id) {
+    jump(curIdx);
+  } else {
+    jump(-1);
+  }
+}
+
 function jump(idx: number) {
   if (player.value == null || cover.value == null) {
     // TODO: add logic
@@ -261,6 +239,8 @@ function error() {
   playerState.value.curMusicInfo.title = ':(';
   playerState.value.curMusicInfo.artist = '播放出错';
 }
+
+function play() {}
 </script>
 
 <!-- TODO: use json to contain the path and info of svg -->
@@ -275,13 +255,13 @@ function error() {
           <p class="artist">{{ artist }}</p>
         </div>
         <div class="music-control">
-          <div class="control-btn prev" @click="prev">
+          <div class="control-btn prev" @click="relativeJump(-1)">
             <img src="./icons/control/prev.svg" alt="prev" />
           </div>
           <div class="control-btn play" @click="toggleMusic">
             <img src="./icons/control/play.svg" alt="play" />
           </div>
-          <div class="control-btn next" @click="next">
+          <div class="control-btn next" @click="relativeJump(1)">
             <img src="./icons/control/next.svg" alt="next" />
           </div>
         </div>
@@ -321,7 +301,7 @@ function error() {
       <span>纯音乐，请欣赏</span>
     </div>
     <!-- TODO: fix passed props -->
-    <audio ref="player" @ended="next" @error="error" @progress="progress">
+    <audio ref="player" @ended="relativeJump(1)" @error="error" @progress="progress">
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
     <pre>{{ playerState }}</pre>
