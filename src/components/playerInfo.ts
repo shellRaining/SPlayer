@@ -28,10 +28,10 @@ interface MusicInfo {
 interface PlayerState {
   idx: number;
   stop: boolean;
+  error: boolean;
   progress: number;
   settings: PlayerSettings;
   playList: MusicInfo[];
-  curMusicInfo: MusicInfo;
 }
 
 export type { PlayerState, MusicInfo, PlayerSettings, Mode, Volume };
