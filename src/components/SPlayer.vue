@@ -7,6 +7,7 @@ import exampleMusicList from '@/../public/music/music.json';
 
 const player = ref<HTMLAudioElement | null>();
 const cover = ref<HTMLDivElement | null>();
+let interval: NodeJS.Timeout;
 
 const volume: Record<string, Volume> = {
   slience: {
@@ -78,6 +79,13 @@ const modeSrc = computed(() => {
 
 const modeAlt = computed(() => {
   return playerState.value.settings.mode.alt;
+});
+
+const progressPercent = computed(() => {
+  const progress = playerState.value.progress;
+  const min = Math.floor(progress / 60);
+  const sec = Math.floor(progress % 60);
+  return `${min}:${sec < 10 ? '0' + sec : sec}`;
 });
 
 const title = computed(() => {
@@ -238,17 +246,64 @@ function jump(idx: number, opts?: { stop?: boolean }) {
   playerState.value.stop ? pauseMusic() : playMusic();
 }
 
+// we can make sure that when drag start, the mouse pos is in the progress bar
+// just add mousemove and mouseup event to this component
+function dragStart(e: MouseEvent) {
+  if (player.value == null || playerState.value.idx == -1 || playerState.value.error) return;
+
+  // update the playedBar width to the current pos
+  const progressBar = e.currentTarget as HTMLDivElement;
+  const getOffsetX = (x: number) => {
+    return x - progressBar.getBoundingClientRect().left;
+  };
+  const barWidth = progressBar.offsetWidth;
+  playedBarStyle.value.width = `${(getOffsetX(e.clientX) / barWidth) * 100}%`;
+
+  // clear the interval to prevent change during drag
+  clearInterval(interval);
+
+  function draging(e: MouseEvent) {
+    playedBarStyle.value.width = `${(getOffsetX(e.clientX) / barWidth) * 100}%`;
+  }
+
+  // should check the end pos of e, if it is out of the bar, we should set the progress to 0 or 100%
+  function dragEnd(e: MouseEvent) {
+    if (player.value == null) return;
+
+    const fixedPos = Math.min(Math.max(getOffsetX(e.clientX), 0), barWidth);
+    playedBarStyle.value.width = `${(fixedPos / barWidth) * 100}%`;
+    console.log(fixedPos, barWidth);
+    player.value.currentTime = player.value.duration * (fixedPos / barWidth);
+    document.removeEventListener('mousemove', draging);
+    document.removeEventListener('mouseup', dragEnd);
+
+    interval = setInterval(updateProcessBar, 500);
+  }
+
+  document.addEventListener('mousemove', draging);
+  document.addEventListener('mouseup', dragEnd);
+}
+
 // set the title and artist of the music to info error
 function error() {
   playerState.value.error = true;
 }
 
-let interval: NodeJS.Timeout;
+const playedBarStyle = ref({
+  'background-color': '#ffc670',
+  width: '0%',
+});
+
+const updateProcessBar = () => {
+  if (player.value == null) return;
+  playerState.value.progress = player.value.currentTime;
+  const duration = player.value.duration;
+  if (duration == 0) return;
+  playedBarStyle.value.width = `${(playerState.value.progress / duration) * 100}%`;
+};
+
 onMounted(() => {
-  interval = setInterval(() => {
-    if (player.value == null) return;
-    playerState.value.progress = player.value.currentTime;
-  }, 500);
+  interval = setInterval(updateProcessBar, 500);
 });
 
 onUnmounted(() => {
@@ -263,7 +318,7 @@ onUnmounted(() => {
   <div class="container">
     <div class="sp-header">
       <div class="music-cover" ref="cover"></div>
-      <div class="music-time">{{ playerState.progress }}</div>
+      <div class="music-time">{{ progressPercent }}</div>
       <div class="info-container">
         <div class="music-info">
           <h2 class="title">{{ title }}</h2>
@@ -292,7 +347,10 @@ onUnmounted(() => {
           <img src="./icons/list/list.svg" alt="list" />
         </div>
       </div>
-      <div class="music-progress"></div>
+      <div class="progress-bar" @mousedown="dragStart">
+        <div class="loaded"></div>
+        <div :style="playedBarStyle"></div>
+      </div>
     </div>
     <div class="sp-info"></div>
     <div :class="['sp-list', { 'list-show': playerState.settings.list }]">
@@ -448,6 +506,31 @@ onUnmounted(() => {
   width: 1.5em;
   height: 1.5em;
   cursor: pointer;
+}
+
+.progress-bar {
+  position: absolute;
+  left: var(--head-height);
+  bottom: 0;
+  right: 0;
+  height: 0.3em;
+  background-color: #efefef;
+  cursor: pointer;
+}
+
+.progress-bar > div {
+  position: absolute;
+  top: 0;
+  height: 0.3em;
+  max-width: 100%;
+}
+
+.loaded {
+  background-color: #e5e5e5;
+}
+
+.played {
+  background-color: #ffc670;
 }
 
 ul {
