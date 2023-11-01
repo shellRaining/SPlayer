@@ -289,6 +289,19 @@ function error() {
   playerState.value.error = true;
 }
 
+function progress() {
+  if (player.value == null) return;
+
+  const duration = player.value.duration;
+  const percentage = player.value.buffered.length > 0 ? player.value.buffered.end(0) / duration : 0;
+  loadedBarStyle.value.width = `${percentage * 100}%`;
+}
+
+const loadedBarStyle = ref({
+  'background-color': '#e5e5e5',
+  width: '0%',
+});
+
 const playedBarStyle = ref({
   'background-color': '#ffc670',
   width: '0%',
@@ -348,7 +361,7 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="progress-bar" @mousedown="dragStart">
-        <div class="loaded"></div>
+        <div :style="loadedBarStyle"></div>
         <div :style="playedBarStyle"></div>
       </div>
     </div>
@@ -374,10 +387,9 @@ onUnmounted(() => {
       <span>纯音乐，请欣赏</span>
     </div>
     <!-- TODO: fix passed props -->
-    <audio ref="player" @ended="relativeJump(1)" @error="error">
+    <audio ref="player" @ended="relativeJump(1)" @error="error" @progress="progress">
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
-    <pre>{{ playerState }}</pre>
   </div>
 </template>
 
@@ -523,14 +535,6 @@ onUnmounted(() => {
   top: 0;
   height: 0.3em;
   max-width: 100%;
-}
-
-.loaded {
-  background-color: #e5e5e5;
-}
-
-.played {
-  background-color: #ffc670;
 }
 
 ul {
