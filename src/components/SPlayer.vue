@@ -55,7 +55,7 @@ const playerState = ref<PlayerState>({
   stop: true,
   error: false,
   progress: 0,
-  lyrics: [],
+  lyric: [{ time: 0, text: '欢迎使用 SPlayer' }],
   settings: {
     volume: volume.max,
     list: false,

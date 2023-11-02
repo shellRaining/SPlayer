@@ -22,8 +22,8 @@ interface MusicInfo {
   artist: string;
   album: string;
   cover: string;
+  lyric: string;
   link: string;
-  lyrics: string;
 }
 
 interface Lyrics {
@@ -36,7 +36,7 @@ interface PlayerState {
   stop: boolean;
   error: boolean;
   progress: number;
-  lyrics: Lyrics[];
+  lyric: Lyrics[];
   settings: PlayerSettings;
   playList: MusicInfo[];
 }
