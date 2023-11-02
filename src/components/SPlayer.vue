@@ -103,7 +103,21 @@ const artist = computed(() => {
 
 const curLyric = computed(() => {
   if (playerState.value.idx == -1 && playerState.value.stop) return '欢迎使用 SPlayer';
-  else if (playerState.value.error) return '发生了错误';
+  if (playerState.value.error) return '发生了错误';
+
+  const lyric = playerState.value.lyric;
+  const progress = playerState.value.progress;
+  const len = lyric.length;
+
+  let idx = 0;
+  for (let i = 0; i < len; i++) {
+    if (progress < lyric[i].time) {
+      idx = i;
+      break;
+    }
+  }
+  idx = Math.max(0, idx - 1);
+  return lyric[idx].text;
 });
 
 // when the player is set correctly (src and alt...), call this function to play
@@ -231,6 +245,23 @@ function relativeJump(offset: number, opts?: { stop?: boolean }) {
 }
 
 function jump(idx: number, opts?: { stop?: boolean }) {
+  function parseLrc(lrc: string) {
+    const lrcList = lrc.split('\n').filter((item) => item.trim() !== '');
+    const lyric = [];
+    for (const line of lrcList) {
+      const pattern = /^\[(\d{2}):(\d{2}).(\d{2,3})\](.*)/;
+      const result = pattern.exec(line);
+      if (result == null) continue;
+      const min = parseInt(result[1]);
+      const sec = parseInt(result[2]);
+      const msec = parseInt(result[3]);
+      const time = min * 60 + sec + msec / 1000;
+      const text = result[4];
+      lyric.push({ time, text });
+    }
+    return lyric;
+  }
+
   if (player.value == null || cover.value == null) return;
   if (idx < 0 || idx >= playerState.value.playList.length) {
     error();
@@ -241,7 +272,7 @@ function jump(idx: number, opts?: { stop?: boolean }) {
   playerState.value.stop = opts?.stop ?? false;
   playerState.value.progress = 0;
   playerState.value.error = false;
-  playerState.value.lyrics = parseLrc(playerState.value.playList[idx].lyric);
+  playerState.value.lyric = parseLrc(playerState.value.playList[idx].lyric);
 
   // change the background attr in .music-cover class
   const curMusicInfo = playerState.value.playList[idx];
@@ -284,7 +315,7 @@ function dragStart(e: MouseEvent) {
     document.removeEventListener('mousemove', draging);
     document.removeEventListener('mouseup', dragEnd);
 
-    interval = setInterval(updateProcessBar, 500);
+    interval = setInterval(updateProcessBar, 200);
   }
 
   document.addEventListener('mousemove', draging);
@@ -323,7 +354,7 @@ const updateProcessBar = () => {
 };
 
 onMounted(() => {
-  interval = setInterval(updateProcessBar, 500);
+  interval = setInterval(updateProcessBar, 200);
 });
 
 onUnmounted(() => {
