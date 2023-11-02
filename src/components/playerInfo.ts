@@ -23,6 +23,12 @@ interface MusicInfo {
   album: string;
   cover: string;
   link: string;
+  lyrics: string;
+}
+
+interface Lyrics {
+  time: number;
+  text: string;
 }
 
 interface PlayerState {
@@ -30,6 +36,7 @@ interface PlayerState {
   stop: boolean;
   error: boolean;
   progress: number;
+  lyrics: Lyrics[];
   settings: PlayerSettings;
   playList: MusicInfo[];
 }

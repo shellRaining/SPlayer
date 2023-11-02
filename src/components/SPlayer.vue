@@ -55,6 +55,7 @@ const playerState = ref<PlayerState>({
   stop: true,
   error: false,
   progress: 0,
+  lyrics: [],
   settings: {
     volume: volume.max,
     list: false,
@@ -98,6 +99,11 @@ const artist = computed(() => {
   if (playerState.value.error) return '发生了错误';
   else if (playerState.value.idx == -1 && playerState.value.stop) return 'shellRaining';
   else return playerState.value.playList[playerState.value.idx].artist;
+});
+
+const curLyric = computed(() => {
+  if (playerState.value.idx == -1 && playerState.value.stop) return '欢迎使用 SPlayer';
+  else if (playerState.value.error) return '发生了错误';
 });
 
 // when the player is set correctly (src and alt...), call this function to play
@@ -235,6 +241,7 @@ function jump(idx: number, opts?: { stop?: boolean }) {
   playerState.value.stop = opts?.stop ?? false;
   playerState.value.progress = 0;
   playerState.value.error = false;
+  playerState.value.lyrics = parseLrc(playerState.value.playList[idx].lyric);
 
   // change the background attr in .music-cover class
   const curMusicInfo = playerState.value.playList[idx];
@@ -384,7 +391,8 @@ onUnmounted(() => {
       </TransitionGroup>
     </div>
     <div class="sp-lyric">
-      <span>纯音乐，请欣赏</span>
+      <!-- TODO: all info should be calc by state... -->
+      <span>{{ curLyric }}</span>
     </div>
     <!-- TODO: fix passed props -->
     <audio ref="player" @ended="relativeJump(1)" @error="error" @progress="progress">
