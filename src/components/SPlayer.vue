@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
+import Playlist from './Player/Playlist.vue';
+import Control from './Player/Control.vue';
+
 import type { PlayerState, Volume, Mode } from './playerInfo';
 
 import exampleMusicList from '@/../public/music/music.json';
@@ -375,17 +378,11 @@ onUnmounted(() => {
           <h2 class="title">{{ title }}</h2>
           <p class="artist">{{ artist }}</p>
         </div>
-        <div class="music-control">
-          <div class="control-btn prev" @click="relativeJump(-1)">
-            <img src="./icons/control/prev.svg" alt="prev" />
-          </div>
-          <div class="control-btn play" @click="toggleMusic">
-            <img src="./icons/control/play.svg" alt="play" />
-          </div>
-          <div class="control-btn next" @click="relativeJump(1)">
-            <img src="./icons/control/next.svg" alt="next" />
-          </div>
-        </div>
+        <Control
+          class="music-control"
+          @relative-jump="(offset) => relativeJump(offset)"
+          @toggle-music="toggleMusic"
+        />
       </div>
       <div class="settings">
         <div class="settings-btn volume" @click="toggleVolume">
@@ -505,7 +502,6 @@ onUnmounted(() => {
   color: #999;
 }
 
-/* music control */
 .music-control {
   position: absolute;
   left: 0;
@@ -518,21 +514,6 @@ onUnmounted(() => {
   transition: 0.3s;
   display: flex;
   align-items: center;
-}
-
-.music-control:hover {
-  opacity: 1;
-}
-
-/* control button */
-.control-btn {
-  color: #3498db;
-  cursor: pointer;
-}
-
-.control-btn > img {
-  width: 2.5em;
-  height: 2.5em;
 }
 
 .settings {
