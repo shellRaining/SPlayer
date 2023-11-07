@@ -7,10 +7,11 @@ import { volume, mode } from '@/components/playerInfo';
 
 import Playlist from './Player/Playlist.vue';
 import Control from './Player/Control.vue';
+import Lyric from './Player/Lyric.vue';
 
 const store = usePlayerStateStore();
 const { playerState } = storeToRefs(store);
-const { toggleVolume, toggleMode, toggleList } = store;
+const { toggleVolume, toggleMode, toggleList, relativeJump, toggleMusic, error } = store;
 
 const player = ref<HTMLAudioElement | null>();
 const cover = ref<HTMLDivElement | null>();
@@ -53,44 +54,13 @@ const artist = computed(() => {
   else return playerState.value.playList[playerState.value.idx].artist;
 });
 
-const curLyric = computed(() => {
-  if (playerState.value.idx == -1 && playerState.value.stop) return '欢迎使用 SPlayer';
-  if (playerState.value.error) return '发生了错误';
-
-  const lyric = playerState.value.lyric;
-  const progress = playerState.value.progress;
-  const len = lyric.length;
-
-  let idx = 0;
-  for (let i = 0; i < len; i++) {
-    if (progress < lyric[i].time) {
-      idx = i;
-      break;
-    }
+watch(
+  () => playerState.value.stop,
+  (stop) => {
+    if (player.value == null) return;
+    stop ? player.value.pause() : player.value.play();
   }
-  idx = Math.max(0, idx - 1);
-  return lyric[idx].text;
-});
-
-// when the player is set correctly (src and alt...), call this function to play
-function playMusic() {
-  if (player.value == null || playerState.value.idx == -1) return;
-
-  playerState.value.stop = false;
-  player.value.play();
-}
-
-// same as playMusic()
-function pauseMusic() {
-  if (player.value == null) return;
-
-  playerState.value.stop = true;
-  player.value.pause();
-}
-
-function toggleMusic() {
-  playerState.value.stop ? playMusic() : pauseMusic();
-}
+);
 
 watch(
   () => playerState.value.settings.volume,
@@ -161,80 +131,27 @@ function remove(idx: number) {
   }
 }
 
-// user select a music in the list, we can make sure that idx is a number gretter or equal to 0
-function selectMusic(idx: number) {
-  if (idx == playerState.value.idx) {
-    toggleMusic();
-  } else {
-    jump(idx);
+watch(
+  () => playerState.value.idx,
+  (curIdx) => {
+    if (player.value == null || cover.value == null) return;
+
+    // change the background attr in .music-cover class
+    const curMusicInfo = playerState.value.playList[curIdx];
+    const coverPath = new URL(curMusicInfo.cover, import.meta.url).href;
+    cover.value.style.backgroundImage = `url(${coverPath})`;
+
+    const musicPath = new URL(curMusicInfo.link, import.meta.url).href;
+    player.value.src = musicPath;
+    playerState.value.stop ? player.value.pause() : player.value.play();
   }
-}
-
-// jump to the music that idx = current idx + offset(could be negative and out of range)
-function relativeJump(offset: number, opts?: { stop?: boolean }) {
-  if (player.value == null || playerState.value.idx == -1) return;
-
-  // make sure the target idx is in range
-  const curIdx = playerState.value.idx % playerState.value.playList.length;
-  const curMode = playerState.value.settings.mode;
-
-  if (curMode.id == mode.loopAll.id || curMode.id == mode.rand.id) {
-    offset %= playerState.value.playList.length;
-    const len = playerState.value.playList.length;
-    const targetIdx = (curIdx + offset + len) % len;
-    jump(targetIdx, opts);
-  } else if (curMode.id == mode.loopSingle.id) {
-    jump(curIdx, opts);
-  } else {
-    jump(-1, opts);
-  }
-}
-
-function jump(idx: number, opts?: { stop?: boolean }) {
-  function parseLrc(lrc: string) {
-    const lrcList = lrc.split('\n').filter((item) => item.trim() !== '');
-    const lyric = [];
-    for (const line of lrcList) {
-      const pattern = /^\[(\d{2}):(\d{2}).(\d{2,3})\](.*)/;
-      const result = pattern.exec(line);
-      if (result == null) continue;
-      const min = parseInt(result[1]);
-      const sec = parseInt(result[2]);
-      const msec = parseInt(result[3]);
-      const time = min * 60 + sec + msec / 1000;
-      const text = result[4];
-      lyric.push({ time, text });
-    }
-    return lyric;
-  }
-
-  if (player.value == null || cover.value == null) return;
-  if (idx < 0 || idx >= playerState.value.playList.length) {
-    error();
-    return;
-  }
-
-  playerState.value.idx = idx;
-  playerState.value.stop = opts?.stop ?? false;
-  playerState.value.progress = 0;
-  playerState.value.error = false;
-  playerState.value.lyric = parseLrc(playerState.value.playList[idx].lyric);
-
-  // change the background attr in .music-cover class
-  const curMusicInfo = playerState.value.playList[idx];
-  const coverPath = new URL(curMusicInfo.cover, import.meta.url).href;
-  cover.value.style.backgroundImage = `url(${coverPath})`;
-
-  const musicPath = new URL(curMusicInfo.link, import.meta.url).href;
-  player.value.src = musicPath;
-  playerState.value.stop ? pauseMusic() : playMusic();
-}
+);
 
 // we can make sure that when drag start, the mouse pos is in the progress bar
 // just add mousemove and mouseup event to this component
 function dragStart(e: MouseEvent) {
   // if (player.value == null || playerState.value.idx == -1 || playerState.value.error) return;
-  if (player.value == null  || playerState.value.error) return;
+  if (player.value == null || playerState.value.error) return;
 
   // update the playedBar width to the current pos
   const progressBar = e.currentTarget as HTMLDivElement;
@@ -266,11 +183,6 @@ function dragStart(e: MouseEvent) {
 
   document.addEventListener('mousemove', draging);
   document.addEventListener('mouseup', dragEnd);
-}
-
-// set the title and artist of the music to info error
-function error() {
-  playerState.value.error = true;
 }
 
 function progress() {
@@ -354,14 +266,12 @@ onUnmounted(() => {
     </div>
     <div class="sp-info"></div>
     <Playlist />
-    <div class="sp-lyric">
-      <!-- TODO: all info should be calc by state... -->
-      <span>{{ curLyric }}</span>
-    </div>
+    <Lyric />
     <!-- TODO: fix passed props -->
     <audio ref="player" @ended="relativeJump(1)" @error="error" @progress="progress">
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
+    <pre>{{ playerState }}</pre>
   </div>
 </template>
 
@@ -491,21 +401,5 @@ onUnmounted(() => {
   top: 0;
   height: 0.3em;
   max-width: 100%;
-}
-
-.sp-lyric {
-  color: #666;
-  text-align: center;
-  overflow: hidden;
-  transition: height 0.5s ease; /* 这里的0.5s是过渡时间，可以根据需要调整 */
-}
-
-.sp-lyric > span {
-  padding: 1em;
-  display: block;
-  overflow: hidden;
-  line-height: 1em;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 </style>

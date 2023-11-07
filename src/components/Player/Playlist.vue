@@ -6,19 +6,25 @@ import { usePlayerStateStore } from '@/store/playerState';
 const store = usePlayerStateStore();
 const { playerState } = storeToRefs(store);
 
+const { selectMusic } = store
+
 const deleteIcon = new URL('@/components/icons/list/delete.svg', import.meta.url).href;
 </script>
 
 <template>
   <div :class="['sp-list', { 'list-show': playerState.settings.list }]">
     <TransitionGroup tag="ul" name="fade">
-      <li class="item-wrapper" v-for="(music, i) in playerState.playList" :key="music.id">
-        <!-- @click="selectMusic(i)" -->
+      <li
+        class="item-wrapper"
+        v-for="(music, i) in playerState.playList"
+        :key="music.id"
+        @click="selectMusic(i)"
+      >
         <div class="music-item">
           <span class="item-index">{{ i }}</span>
           <span class="item-title">{{ music.title }}</span>
           <span class="item-artist">{{ music.artist }}</span>
-          <!-- <img src="./icons/list/Delete.svg" alt="x" class="item-btn" @click.stop="remove(i)" /> -->
+          <!-- <img :src="deleteIcon" alt="x" class="item-btn" @click.stop="remove(i)" /> -->
           <img :src="deleteIcon" alt="x" class="item-btn" />
         </div>
       </li>
@@ -36,7 +42,7 @@ ul {
 
 .sp-list {
   max-height: 0;
-  overflow: auto;
+  overflow: hidden;
   transition: 0.3s;
   border-bottom: 1px solid #eee;
 }
