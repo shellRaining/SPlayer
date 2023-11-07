@@ -1,71 +1,20 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { storeToRefs } from 'pinia';
+
+import { usePlayerStateStore } from '@/store/playerState';
+import { volume, mode } from '@/components/playerInfo';
 
 import Playlist from './Player/Playlist.vue';
 import Control from './Player/Control.vue';
 
-import type { PlayerState, Volume, Mode } from './playerInfo';
-
-import exampleMusicList from '@/../public/music/music.json';
+const store = usePlayerStateStore();
+const { playerState } = storeToRefs(store);
+const { toggleVolume, toggleMode, toggleList } = store;
 
 const player = ref<HTMLAudioElement | null>();
 const cover = ref<HTMLDivElement | null>();
 let interval: NodeJS.Timeout;
-
-const volume: Record<string, Volume> = {
-  slience: {
-    id: 0,
-    src: './icons/volume/slience.svg',
-    alt: 'slience',
-  },
-  low: {
-    id: 1,
-    src: './icons/volume/low.svg',
-    alt: 'low',
-  },
-  mid: {
-    id: 2,
-    src: './icons/volume/mid.svg',
-    alt: 'mid',
-  },
-  max: {
-    id: 3,
-    src: './icons/volume/max.svg',
-    alt: 'max',
-  },
-};
-
-const mode: Record<string, Mode> = {
-  loopAll: {
-    id: 0,
-    src: './icons/mode/loopAll.svg',
-    alt: 'loop all',
-  },
-  loopSingle: {
-    id: 1,
-    src: './icons/mode/loopSingle.svg',
-    alt: 'loop one',
-  },
-  rand: {
-    id: 2,
-    src: './icons/mode/rand.svg',
-    alt: 'shuffle',
-  },
-};
-
-const playerState = ref<PlayerState>({
-  idx: -1,
-  stop: true,
-  error: false,
-  progress: 0,
-  lyric: [{ time: 0, text: '欢迎使用 SPlayer' }],
-  settings: {
-    volume: volume.max,
-    list: false,
-    mode: mode.loopAll,
-  },
-  playList: exampleMusicList,
-});
 
 const volumeSrc = computed(() => {
   const path = new URL(playerState.value.settings.volume.src, import.meta.url);
@@ -143,48 +92,33 @@ function toggleMusic() {
   playerState.value.stop ? playMusic() : pauseMusic();
 }
 
-function toggleVolume() {
-  if (player.value == null) return;
+watch(
+  () => playerState.value.settings.volume,
+  (newVal) => {
+    if (player.value == null) return;
 
-  let curVolume = playerState.value.settings.volume;
-  const volumeList = Object.values(volume);
-  curVolume = volumeList[(curVolume.id + 1) % volumeList.length];
-  playerState.value.settings.volume = curVolume;
+    player.value.volume = newVal.id / (Object.values(volume).length - 1);
+  }
+);
 
-  player.value.volume = curVolume.id / (volumeList.length - 1);
-}
+watch(
+  () => playerState.value.settings.mode,
+  (curMode) => {
+    if (player.value == null) return;
 
-function toggleMode() {
-  let curMode = playerState.value.settings.mode;
-  const modeList = Object.values(mode);
-  curMode = modeList[(curMode.id + 1) % modeList.length];
-  playerState.value.settings.mode = curMode;
-
-  // TODO: not compare two objects directly
-  const curPlayList = playerState.value.playList;
-  if (curMode.id == mode.loopSingle.id) {
-    curPlayList.sort((v) => v.id);
-  } else if (curMode.id == mode.rand.id) {
-    // shuffle the play list
-    for (let i = curPlayList.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [curPlayList[i], curPlayList[j]] = [curPlayList[j], curPlayList[i]];
+    // TODO: not compare two objects directly
+    const curPlayList = playerState.value.playList;
+    if (curMode.id == mode.loopSingle.id) {
+      curPlayList.sort((v) => v.id);
+    } else if (curMode.id == mode.rand.id) {
+      // shuffle the play list
+      for (let i = curPlayList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [curPlayList[i], curPlayList[j]] = [curPlayList[j], curPlayList[i]];
+      }
     }
   }
-}
-
-function toggleList() {
-  playerState.value.settings.list = !playerState.value.settings.list;
-}
-
-// user select a music in the list, we can make sure that idx is a number gretter or equal to 0
-function selectMusic(idx: number) {
-  if (idx == playerState.value.idx) {
-    toggleMusic();
-  } else {
-    jump(idx);
-  }
-}
+);
 
 // reset the whole player, include audio
 function resetPlayer() {
@@ -224,6 +158,15 @@ function remove(idx: number) {
     relativeJump(0, { stop: playerState.value.stop });
   } else if (idx < playerState.value.idx) {
     playerState.value.idx -= 1;
+  }
+}
+
+// user select a music in the list, we can make sure that idx is a number gretter or equal to 0
+function selectMusic(idx: number) {
+  if (idx == playerState.value.idx) {
+    toggleMusic();
+  } else {
+    jump(idx);
   }
 }
 
@@ -290,7 +233,8 @@ function jump(idx: number, opts?: { stop?: boolean }) {
 // we can make sure that when drag start, the mouse pos is in the progress bar
 // just add mousemove and mouseup event to this component
 function dragStart(e: MouseEvent) {
-  if (player.value == null || playerState.value.idx == -1 || playerState.value.error) return;
+  // if (player.value == null || playerState.value.idx == -1 || playerState.value.error) return;
+  if (player.value == null  || playerState.value.error) return;
 
   // update the playedBar width to the current pos
   const progressBar = e.currentTarget as HTMLDivElement;
@@ -313,7 +257,6 @@ function dragStart(e: MouseEvent) {
 
     const fixedPos = Math.min(Math.max(getOffsetX(e.clientX), 0), barWidth);
     playedBarStyle.value.width = `${(fixedPos / barWidth) * 100}%`;
-    console.log(fixedPos, barWidth);
     player.value.currentTime = player.value.duration * (fixedPos / barWidth);
     document.removeEventListener('mousemove', draging);
     document.removeEventListener('mouseup', dragEnd);
@@ -332,11 +275,20 @@ function error() {
 
 function progress() {
   if (player.value == null) return;
-
-  const duration = player.value.duration;
-  const percentage = player.value.buffered.length > 0 ? player.value.buffered.end(0) / duration : 0;
-  loadedBarStyle.value.width = `${percentage * 100}%`;
+  playerState.value.bufferedProgress =
+    player.value.buffered.length > 0 ? player.value.buffered.end(0) : 0;
 }
+
+watch(
+  () => playerState.value.bufferedProgress,
+  (curBuffered) => {
+    if (player.value == null) return;
+
+    const duration = playerState.value.duration;
+    const percentage = duration == 0 ? 0 : curBuffered / duration;
+    loadedBarStyle.value.width = `${percentage * 100}%`;
+  }
+);
 
 const loadedBarStyle = ref({
   'background-color': '#e5e5e5',
@@ -401,23 +353,7 @@ onUnmounted(() => {
       </div>
     </div>
     <div class="sp-info"></div>
-    <div :class="['sp-list', { 'list-show': playerState.settings.list }]">
-      <TransitionGroup tag="ul" name="fade">
-        <li
-          class="item-wrapper"
-          v-for="(music, i) in playerState.playList"
-          :key="music.id"
-          @click="selectMusic(i)"
-        >
-          <div class="music-item">
-            <span class="item-index">{{ i }}</span>
-            <span class="item-title">{{ music.title }}</span>
-            <span class="item-artist">{{ music.artist }}</span>
-            <img src="./icons/list/Delete.svg" alt="x" class="item-btn" @click.stop="remove(i)" />
-          </div>
-        </li>
-      </TransitionGroup>
-    </div>
+    <Playlist />
     <div class="sp-lyric">
       <!-- TODO: all info should be calc by state... -->
       <span>{{ curLyric }}</span>
@@ -555,110 +491,6 @@ onUnmounted(() => {
   top: 0;
   height: 0.3em;
   max-width: 100%;
-}
-
-ul {
-  /* clear ul list style */
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.sp-list {
-  max-height: 0;
-  overflow: auto;
-  transition: 0.3s;
-  border-bottom: 1px solid #eee;
-}
-
-.list-show {
-  /* TODO: why 15em */
-  /* max-height: 15em; */
-  max-height: 50vh;
-}
-
-.item-wrapper {
-  position: relative;
-  width: 100%;
-  height: 3em;
-}
-
-.music-item {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  overflow: hidden;
-  padding: 0.75em 1em;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* TODO: how to use my own transition */
-}
-
-/* 1. 声明过渡效果 */
-.fade-move,
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
-}
-
-.fade-move,
-.fade-enter-active .music-item,
-.fade-leave-active .music-item {
-  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
-}
-
-/* 2. 声明进入和离开的状态 */
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  height: 0;
-}
-
-.fade-enter-from .music-item,
-.fade-leave-to .music-item {
-  opacity: 0;
-  transform: scaleY(0.01) translate(3em, 0);
-}
-
-/* 3. 确保离开的项目被移除出了布局流
-      以便正确地计算移动时的动画效果。 */
-.fade-leave-active .music-item {
-  position: absolute;
-}
-
-.item-wrapper:nth-child(odd) {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.item-wrapper:nth-child(even) {
-  background: #fff;
-}
-
-.item-wrapper:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.item-index {
-  margin-right: 0.75em;
-}
-
-.item-title {
-  margin: 0 0.5em;
-}
-
-.item-title:after {
-  content: '-';
-  margin: 0 0.25em;
-}
-
-.item-artist {
-  opacity: 0.6;
-  flex: 1;
-}
-
-.item-btn {
-  border: none;
-  width: 1em;
 }
 
 .sp-lyric {
