@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { usePlayerStateStore } from '@/store/playerState';
@@ -8,14 +8,13 @@ import { volume, mode } from '@/components/playerInfo';
 import Playlist from './Player/Playlist.vue';
 import Control from './Player/Control.vue';
 import Lyric from './Player/Lyric.vue';
+import ProcessBar from './Player/progressBar.vue';
 
 const store = usePlayerStateStore();
-const { playerState } = storeToRefs(store);
+const { playerState, player } = storeToRefs(store);
 const { toggleVolume, toggleMode, toggleList, relativeJump, toggleMusic, error } = store;
 
-const player = ref<HTMLAudioElement | null>();
 const cover = ref<HTMLDivElement | null>();
-let interval: NodeJS.Timeout;
 
 const volumeSrc = computed(() => {
   const path = new URL(playerState.value.settings.volume.src, import.meta.url);
@@ -57,7 +56,7 @@ const artist = computed(() => {
 watch(
   () => playerState.value.stop,
   (stop) => {
-    if (player.value == null) return;
+    if (player.value == null || playerState.value.idx == -1) return;
     stop ? player.value.pause() : player.value.play();
   }
 );
@@ -147,88 +146,16 @@ watch(
   }
 );
 
-// we can make sure that when drag start, the mouse pos is in the progress bar
-// just add mousemove and mouseup event to this component
-function dragStart(e: MouseEvent) {
-  // if (player.value == null || playerState.value.idx == -1 || playerState.value.error) return;
-  if (player.value == null || playerState.value.error) return;
-
-  // update the playedBar width to the current pos
-  const progressBar = e.currentTarget as HTMLDivElement;
-  const getOffsetX = (x: number) => {
-    return x - progressBar.getBoundingClientRect().left;
-  };
-  const barWidth = progressBar.offsetWidth;
-  playedBarStyle.value.width = `${(getOffsetX(e.clientX) / barWidth) * 100}%`;
-
-  // clear the interval to prevent change during drag
-  clearInterval(interval);
-
-  function draging(e: MouseEvent) {
-    playedBarStyle.value.width = `${(getOffsetX(e.clientX) / barWidth) * 100}%`;
-  }
-
-  // should check the end pos of e, if it is out of the bar, we should set the progress to 0 or 100%
-  function dragEnd(e: MouseEvent) {
-    if (player.value == null) return;
-
-    const fixedPos = Math.min(Math.max(getOffsetX(e.clientX), 0), barWidth);
-    playedBarStyle.value.width = `${(fixedPos / barWidth) * 100}%`;
-    player.value.currentTime = player.value.duration * (fixedPos / barWidth);
-    document.removeEventListener('mousemove', draging);
-    document.removeEventListener('mouseup', dragEnd);
-
-    interval = setInterval(updateProcessBar, 200);
-  }
-
-  document.addEventListener('mousemove', draging);
-  document.addEventListener('mouseup', dragEnd);
-}
-
 function progress() {
   if (player.value == null) return;
   playerState.value.bufferedProgress =
     player.value.buffered.length > 0 ? player.value.buffered.end(0) : 0;
 }
 
-watch(
-  () => playerState.value.bufferedProgress,
-  (curBuffered) => {
-    if (player.value == null) return;
-
-    const duration = playerState.value.duration;
-    const percentage = duration == 0 ? 0 : curBuffered / duration;
-    loadedBarStyle.value.width = `${percentage * 100}%`;
-  }
-);
-
-const loadedBarStyle = ref({
-  'background-color': '#e5e5e5',
-  width: '0%',
-});
-
-const playedBarStyle = ref({
-  'background-color': '#ffc670',
-  width: '0%',
-});
-
-const updateProcessBar = () => {
+function loadedData() {
   if (player.value == null) return;
-  playerState.value.progress = player.value.currentTime;
-  const duration = player.value.duration;
-  if (duration == 0) return;
-  playedBarStyle.value.width = `${(playerState.value.progress / duration) * 100}%`;
-};
-
-onMounted(() => {
-  interval = setInterval(updateProcessBar, 200);
-});
-
-onUnmounted(() => {
-  if (player.value == null) return;
-  player.value.pause();
-  clearInterval(interval);
-});
+  playerState.value.duration = player.value.duration;
+}
 </script>
 
 <!-- TODO: use json to contain the path and info of svg -->
@@ -242,11 +169,7 @@ onUnmounted(() => {
           <h2 class="title">{{ title }}</h2>
           <p class="artist">{{ artist }}</p>
         </div>
-        <Control
-          class="music-control"
-          @relative-jump="(offset) => relativeJump(offset)"
-          @toggle-music="toggleMusic"
-        />
+        <Control class="music-control" />
       </div>
       <div class="settings">
         <div class="settings-btn volume" @click="toggleVolume">
@@ -259,16 +182,20 @@ onUnmounted(() => {
           <img src="./icons/list/list.svg" alt="list" />
         </div>
       </div>
-      <div class="progress-bar" @mousedown="dragStart">
-        <div :style="loadedBarStyle"></div>
-        <div :style="playedBarStyle"></div>
-      </div>
+      <ProcessBar />
     </div>
     <div class="sp-info"></div>
     <Playlist />
     <Lyric />
     <!-- TODO: fix passed props -->
-    <audio ref="player" @ended="relativeJump(1)" @error="error" @progress="progress">
+    <!-- TODO: loadeddata -->
+    <audio
+      ref="player"
+      @loadeddata="loadedData"
+      @ended="relativeJump(1)"
+      @error="error"
+      @progress="progress"
+    >
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
     <pre>{{ playerState }}</pre>
@@ -384,22 +311,5 @@ onUnmounted(() => {
   width: 1.5em;
   height: 1.5em;
   cursor: pointer;
-}
-
-.progress-bar {
-  position: absolute;
-  left: var(--head-height);
-  bottom: 0;
-  right: 0;
-  height: 0.3em;
-  background-color: #efefef;
-  cursor: pointer;
-}
-
-.progress-bar > div {
-  position: absolute;
-  top: 0;
-  height: 0.3em;
-  max-width: 100%;
 }
 </style>

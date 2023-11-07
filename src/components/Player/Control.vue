@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-const emit = defineEmits<{
-  toggleMusic: [];
-  relativeJump: [number];
-}>();
+import { usePlayerStateStore } from '@/store/playerState';
+
+const store = usePlayerStateStore();
+const { relativeJump, toggleMusic } = store;
 
 const iconsPath = {
   play: new URL('../icons/control/play.svg', import.meta.url).href,
@@ -14,13 +14,13 @@ const iconsPath = {
 
 <template>
   <div class="control-bar">
-    <div class="control-btn prev" @click="$emit('relativeJump', -1)">
+    <div class="control-btn prev" @click="relativeJump(-1)">
       <img :src="iconsPath.prev" alt="prev" />
     </div>
-    <div class="control-btn play" @click="$emit('toggleMusic')">
+    <div class="control-btn play" @click="toggleMusic()">
       <img :src="iconsPath.play" alt="play" />
     </div>
-    <div class="control-btn next" @click="$emit('relativeJump', 1)">
+    <div class="control-btn next" @click="relativeJump(1)">
       <img :src="iconsPath.next" alt="next" />
     </div>
   </div>

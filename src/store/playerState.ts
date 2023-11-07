@@ -21,6 +21,7 @@ export const usePlayerStateStore = defineStore('playerState', () => {
     },
     playList: exampleMusicList,
   });
+  const player = ref<HTMLAudioElement | null>();
 
   function toggleVolume() {
     let curVolume = playerState.value.settings.volume;
@@ -66,6 +67,7 @@ export const usePlayerStateStore = defineStore('playerState', () => {
   }
 
   function toggleMusic() {
+    if (playerState.value.idx == -1) return;
     playerState.value.stop = !playerState.value.stop;
   }
 
@@ -95,6 +97,7 @@ export const usePlayerStateStore = defineStore('playerState', () => {
     playerState.value.idx = idx;
     playerState.value.stop = opts?.stop ?? false;
     playerState.value.progress = 0;
+    playerState.value.bufferedProgress = 0;
     playerState.value.error = false;
     playerState.value.lyric = parseLrc(playerState.value.playList[idx].lyric);
   }
@@ -115,6 +118,8 @@ export const usePlayerStateStore = defineStore('playerState', () => {
 
   return {
     playerState,
+    player,
+
     toggleVolume,
     toggleMode,
     toggleMusic,
@@ -122,6 +127,6 @@ export const usePlayerStateStore = defineStore('playerState', () => {
     relativeJump,
     jump,
     error,
-    selectMusic
+    selectMusic,
   };
 });
