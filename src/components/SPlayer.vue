@@ -6,7 +6,7 @@ import { usePlayerStateStore } from '@/store/playerState';
 import { volume, mode } from '@/components/playerInfo';
 
 import Playlist from './Player/Playlist.vue';
-import Control from './Player/Control.vue';
+import InfoContent from './Player/InfoContent.vue';
 import Lyric from './Player/Lyric.vue';
 import ProcessBar from './Player/progressBar.vue';
 import Settings from './Player/Settings.vue';
@@ -20,18 +20,6 @@ const progressPercent = computed(() => {
   const min = Math.floor(progress / 60);
   const sec = Math.floor(progress % 60);
   return `${min}:${sec < 10 ? '0' + sec : sec}`;
-});
-
-const title = computed(() => {
-  if (playerState.value.idx == -1 && playerState.value.stop) return '欢迎使用 SPlayer';
-  else if (playerState.value.error) return ':(';
-  else return playerState.value.playList[playerState.value.idx].title;
-});
-
-const artist = computed(() => {
-  if (playerState.value.idx == -1 && playerState.value.stop) return 'shellRaining';
-  else if (playerState.value.error) return '发生了错误';
-  else return playerState.value.playList[playerState.value.idx].artist;
 });
 
 watch(
@@ -89,6 +77,7 @@ watch(
     const musicPath = new URL(curMusicInfo.link, import.meta.url).href;
     player.value.src = musicPath;
 
+    console.log(`stop: ${playerState.value.stop}`);
     if (oldMusicInfo == null) {
       player.value.play();
     } else {
@@ -119,13 +108,7 @@ const musicCoverBg = ref({
     <div class="sp-header">
       <div class="music-cover" :style="musicCoverBg"></div>
       <div class="music-time">{{ progressPercent }}</div>
-      <div class="info-container">
-        <div class="music-info">
-          <h2 class="title">{{ title }}</h2>
-          <p class="artist">{{ artist }}</p>
-        </div>
-        <Control class="music-control" />
-      </div>
+      <InfoContent />
       <Settings />
       <ProcessBar />
     </div>
@@ -194,42 +177,5 @@ const musicCoverBg = ref({
 
 .music-time:hover {
   opacity: 1;
-}
-
-.info-container {
-  position: relative;
-  flex: 1;
-}
-
-/* music info */
-.music-info {
-  flex: 1;
-  white-space: nowrap;
-  line-height: 0.8em;
-  padding: 0 2em;
-}
-
-.title {
-  font-size: 1em;
-  font-weight: 600;
-}
-
-.artist {
-  font-size: 0.8em;
-  color: #999;
-}
-
-.music-control {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  opacity: 0;
-  padding: 0.5em;
-  background-color: #fff;
-  transition: 0.3s;
-  display: flex;
-  align-items: center;
 }
 </style>

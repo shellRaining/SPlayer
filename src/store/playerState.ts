@@ -47,7 +47,7 @@ export const usePlayerStateStore = defineStore('playerState', () => {
     // if (player.value == null || playerState.value.idx == -1) return;
     // TODO: need change
     if (playerState.value.idx == -1) {
-      jump(0, opts);
+      jump(0, { stop: false });
       return;
     }
 
