@@ -9,30 +9,13 @@ import Playlist from './Player/Playlist.vue';
 import Control from './Player/Control.vue';
 import Lyric from './Player/Lyric.vue';
 import ProcessBar from './Player/progressBar.vue';
+import Settings from './Player/Settings.vue'
 
 const store = usePlayerStateStore();
 const { playerState, player } = storeToRefs(store);
-const { toggleVolume, toggleMode, toggleList, relativeJump, error } = store;
+const { relativeJump } = store;
 
 const cover = ref<HTMLDivElement | null>();
-
-const volumeSrc = computed(() => {
-  const path = new URL(playerState.value.settings.volume.src, import.meta.url);
-  return path.href;
-});
-
-const volumeAlt = computed(() => {
-  return playerState.value.settings.volume.alt;
-});
-
-const modeSrc = computed(() => {
-  const path = new URL(playerState.value.settings.mode.src, import.meta.url);
-  return path.href;
-});
-
-const modeAlt = computed(() => {
-  return playerState.value.settings.mode.alt;
-});
 
 const progressPercent = computed(() => {
   const progress = playerState.value.progress;
@@ -91,19 +74,18 @@ watch(
 );
 
 watch(
-  () => playerState.value.idx,
-  (curIdx, oldIdx) => {
+  () => playerState.value.playList[playerState.value.idx],
+  (curMusicInfo, oldMusicInfo) => {
     if (player.value == null || cover.value == null) return;
 
     // change the background attr in .music-cover class
-    const curMusicInfo = playerState.value.playList[curIdx];
     const coverPath = new URL(curMusicInfo.cover, import.meta.url).href;
     cover.value.style.backgroundImage = `url(${coverPath})`;
 
     const musicPath = new URL(curMusicInfo.link, import.meta.url).href;
     player.value.src = musicPath;
 
-    if (oldIdx == -1) {
+    if (oldMusicInfo == null) {
       player.value.play();
     } else {
       playerState.value.stop ? player.value.pause() : player.value.play();
@@ -136,20 +118,9 @@ function loadedData() {
         </div>
         <Control class="music-control" />
       </div>
-      <div class="settings">
-        <div class="settings-btn volume" @click="toggleVolume">
-          <img :src="volumeSrc" :alt="volumeAlt" />
-        </div>
-        <div class="settings-btn mode" @click="toggleMode">
-          <img :src="modeSrc" :alt="modeAlt" />
-        </div>
-        <div class="settings-btn list" @click="toggleList">
-          <img src="./icons/list/list.svg" alt="list" />
-        </div>
-      </div>
+      <Settings />
       <ProcessBar />
     </div>
-    <div class="sp-info"></div>
     <Playlist />
     <Lyric />
     <!-- TODO: fix passed props -->
@@ -158,12 +129,11 @@ function loadedData() {
       ref="player"
       @loadeddata="loadedData"
       @ended="relativeJump(1)"
-      @error="error"
+      @error="playerState.error = true"
       @progress="progress"
     >
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
-    <pre>{{ playerState }}</pre>
   </div>
 </template>
 
@@ -254,27 +224,4 @@ function loadedData() {
   align-items: center;
 }
 
-.settings {
-  min-width: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100px;
-}
-
-.settings-btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  width: 2em;
-  height: 2em;
-}
-
-.settings-btn > img {
-  fill: var(--SPlayer-gray);
-  width: 1.5em;
-  height: 1.5em;
-  cursor: pointer;
-}
 </style>

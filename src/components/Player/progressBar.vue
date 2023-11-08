@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch, onMounted, onUnmounted, watchEffect } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { usePlayerStateStore } from '@/store/playerState';
@@ -101,7 +101,7 @@ onUnmounted(() => {
 
 <template>
   <div class="progress-bar" @mousedown="dragStart">
-    <!-- <div :style="loadedBarStyle"></div> -->
+    <div :style="loadedBarStyle"></div>
     <div :style="playedBarStyle"></div>
   </div>
 </template>

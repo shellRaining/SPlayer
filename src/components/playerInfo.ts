@@ -1,3 +1,5 @@
+import * as iconsPath from '@/components/icons/index';
+
 interface Volume {
   id: number;
   src: string;
@@ -7,22 +9,22 @@ interface Volume {
 const volume: Record<string, Volume> = {
   slience: {
     id: 0,
-    src: './icons/volume/slience.svg',
+    src: iconsPath.slience,
     alt: 'slience',
   },
   low: {
     id: 1,
-    src: './icons/volume/low.svg',
+    src: iconsPath.low,
     alt: 'low',
   },
   mid: {
     id: 2,
-    src: './icons/volume/mid.svg',
+    src: iconsPath.mid,
     alt: 'mid',
   },
   max: {
     id: 3,
-    src: './icons/volume/max.svg',
+    src: iconsPath.max,
     alt: 'max',
   },
 };
@@ -42,17 +44,17 @@ interface PlayerSettings {
 const mode: Record<string, Mode> = {
   loopAll: {
     id: 0,
-    src: './icons/mode/loopAll.svg',
+    src: iconsPath.loopAll,
     alt: 'loop all',
   },
   loopSingle: {
     id: 1,
-    src: './icons/mode/loopSingle.svg',
+    src: iconsPath.loopSingle,
     alt: 'loop one',
   },
   rand: {
     id: 2,
-    src: './icons/mode/rand.svg',
+    src: iconsPath.rand,
     alt: 'shuffle',
   },
 };

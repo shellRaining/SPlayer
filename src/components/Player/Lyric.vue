@@ -39,7 +39,6 @@ const curLyric = computed(() => {
   text-align: center;
   overflow: hidden;
   /* TODO: transition should change */
-  transition: height 0.5s ease; /* 这里的0.5s是过渡时间，可以根据需要调整 */
 
   & > span {
     padding: 1em;

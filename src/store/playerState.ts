@@ -90,7 +90,7 @@ export const usePlayerStateStore = defineStore('playerState', () => {
     }
 
     if (idx < 0 || idx >= playerState.value.playList.length) {
-      error();
+      playerState.value.error = true;
       return;
     }
 
@@ -136,16 +136,12 @@ export const usePlayerStateStore = defineStore('playerState', () => {
 
     playerState.value.playList.splice(idx, 1);
     if (idx == playerState.value.idx) {
-      // if the music to be removed is the current music, jump to the next music
+      // if the music to be removed is the current music, jump to the next music, and resit the stop state
       relativeJump(0, { stop: playerState.value.stop });
+      console.log(idx, playerState.value.idx);
     } else if (idx < playerState.value.idx) {
       playerState.value.idx -= 1;
     }
-  }
-
-  // set the title and artist of the music to info error
-  function error() {
-    playerState.value.error = true;
   }
 
   return {
@@ -159,7 +155,6 @@ export const usePlayerStateStore = defineStore('playerState', () => {
     relativeJump,
     jump,
     remove,
-    error,
     selectMusic,
   };
 });
