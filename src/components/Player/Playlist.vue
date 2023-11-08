@@ -20,8 +20,10 @@ const { selectMusic, remove } = store;
       >
         <div class="music-item">
           <span class="item-index">{{ i }}</span>
-          <span class="item-title">{{ music.title }}</span>
-          <span class="item-artist">{{ music.artist }}</span>
+          <span class="item-info">
+            <span class="item-title">{{ music.title }}</span>
+            <span class="item-artist">{{ music.artist }}</span>
+          </span>
           <img :src="deleteIcon" alt="x" class="item-btn" @click.stop="remove(i)" />
         </div>
       </li>
@@ -113,6 +115,12 @@ ul {
 
 .item-index {
   margin-right: 0.75em;
+  flex: 0 0 1em;
+}
+
+.item-info {
+  flex-flow: hidden;
+  overflow: hidden;
 }
 
 .item-title {
@@ -126,11 +134,12 @@ ul {
 
 .item-artist {
   opacity: 0.6;
-  flex: 1;
 }
 
 .item-btn {
   border: none;
   width: 1em;
+  margin-left: auto;
+  flex: 0 0 1em;
 }
 </style>
