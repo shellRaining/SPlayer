@@ -9,13 +9,11 @@ import Playlist from './Player/Playlist.vue';
 import Control from './Player/Control.vue';
 import Lyric from './Player/Lyric.vue';
 import ProcessBar from './Player/progressBar.vue';
-import Settings from './Player/Settings.vue'
+import Settings from './Player/Settings.vue';
 
 const store = usePlayerStateStore();
 const { playerState, player } = storeToRefs(store);
 const { relativeJump } = store;
-
-const cover = ref<HTMLDivElement | null>();
 
 const progressPercent = computed(() => {
   const progress = playerState.value.progress;
@@ -25,14 +23,14 @@ const progressPercent = computed(() => {
 });
 
 const title = computed(() => {
-  if (playerState.value.error) return ':(';
-  else if (playerState.value.idx == -1 && playerState.value.stop) return '欢迎使用 SPlayer';
+  if (playerState.value.idx == -1 && playerState.value.stop) return '欢迎使用 SPlayer';
+  else if (playerState.value.error) return ':(';
   else return playerState.value.playList[playerState.value.idx].title;
 });
 
 const artist = computed(() => {
-  if (playerState.value.error) return '发生了错误';
-  else if (playerState.value.idx == -1 && playerState.value.stop) return 'shellRaining';
+  if (playerState.value.idx == -1 && playerState.value.stop) return 'shellRaining';
+  else if (playerState.value.error) return '发生了错误';
   else return playerState.value.playList[playerState.value.idx].artist;
 });
 
@@ -76,11 +74,17 @@ watch(
 watch(
   () => playerState.value.playList[playerState.value.idx],
   (curMusicInfo, oldMusicInfo) => {
-    if (player.value == null || cover.value == null) return;
+    if (player.value == null) return;
+    if (curMusicInfo == null) {
+      player.value.src = '';
+      player.value.pause();
+      musicCoverBg.value.backgroundImage = `url(/default_cover.jpeg)`;
+      return;
+    }
 
     // change the background attr in .music-cover class
     const coverPath = new URL(curMusicInfo.cover, import.meta.url).href;
-    cover.value.style.backgroundImage = `url(${coverPath})`;
+    musicCoverBg.value.backgroundImage = `url(${coverPath})`;
 
     const musicPath = new URL(curMusicInfo.link, import.meta.url).href;
     player.value.src = musicPath;
@@ -103,13 +107,17 @@ function loadedData() {
   if (player.value == null) return;
   playerState.value.duration = player.value.duration;
 }
+
+const musicCoverBg = ref({
+  backgroundImage: '',
+});
 </script>
 
 <!-- TODO: use json to contain the path and info of svg -->
 <template>
   <div class="container">
     <div class="sp-header">
-      <div class="music-cover" ref="cover"></div>
+      <div class="music-cover" :style="musicCoverBg"></div>
       <div class="music-time">{{ progressPercent }}</div>
       <div class="info-container">
         <div class="music-info">
@@ -134,6 +142,7 @@ function loadedData() {
     >
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
+    <pre>{{ playerState }}</pre>
   </div>
 </template>
 
@@ -223,5 +232,4 @@ function loadedData() {
   display: flex;
   align-items: center;
 }
-
 </style>

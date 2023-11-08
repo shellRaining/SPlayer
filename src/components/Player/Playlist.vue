@@ -2,12 +2,11 @@
 import { storeToRefs } from 'pinia';
 
 import { usePlayerStateStore } from '@/store/playerState';
+import { deleteIcon } from '@/components/icons/index';
 
 const store = usePlayerStateStore();
 const { playerState } = storeToRefs(store);
 const { selectMusic, remove } = store;
-
-const deleteIcon = new URL('@/components/icons/list/delete.svg', import.meta.url).href;
 </script>
 
 <template>

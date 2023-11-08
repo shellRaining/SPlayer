@@ -43,6 +43,7 @@ export const usePlayerStateStore = defineStore('playerState', () => {
 
   // jump to the music that idx = current idx + offset(could be negative and out of range)
   function relativeJump(offset: number, opts?: { stop?: boolean }) {
+    if (playerState.value.playList.length == 0) return;
     // if (player.value == null || playerState.value.idx == -1) return;
     // TODO: need change
     if (playerState.value.idx == -1) {
@@ -131,14 +132,12 @@ export const usePlayerStateStore = defineStore('playerState', () => {
       playerState.value.settings.volume = volume.max;
       playerState.value.settings.list = false;
       playerState.value.settings.mode = mode.loopAll;
-      return;
     }
 
     playerState.value.playList.splice(idx, 1);
     if (idx == playerState.value.idx) {
       // if the music to be removed is the current music, jump to the next music, and resit the stop state
       relativeJump(0, { stop: playerState.value.stop });
-      console.log(idx, playerState.value.idx);
     } else if (idx < playerState.value.idx) {
       playerState.value.idx -= 1;
     }
