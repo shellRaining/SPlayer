@@ -39,7 +39,7 @@ ul {
 
 .sp-list {
   max-height: 0;
-  overflow: hidden;
+  overflow: auto;
   transition: 0.3s;
   border-bottom: 1px solid #eee;
 }

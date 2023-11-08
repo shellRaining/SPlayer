@@ -77,7 +77,6 @@ watch(
     const musicPath = new URL(curMusicInfo.link, import.meta.url).href;
     player.value.src = musicPath;
 
-    console.log(`stop: ${playerState.value.stop}`);
     if (oldMusicInfo == null) {
       player.value.play();
     } else {
@@ -125,7 +124,6 @@ const musicCoverBg = ref({
     >
       <p>你的浏览器不支持 HTML5 音频，可点击<a href="viper.mp3">此链接</a>收听。</p>
     </audio>
-    <pre>{{ playerState }}</pre>
   </div>
 </template>
 
