@@ -144,38 +144,38 @@ const musicCoverBg = ref({
   box-shadow:
     0 1px 5px 1px rgba(0, 0, 0, 0.1),
     0 0 5px rgba(0, 0, 0, 0.1);
-}
 
-.sp-header {
-  display: flex;
-  height: var(--head-height);
-  overflow: hidden;
-  position: relative;
-}
+  .sp-header {
+    display: flex;
+    height: var(--head-height);
+    overflow: hidden;
+    position: relative;
 
-.music-cover {
-  min-width: var(--head-height);
-  height: var(--cover-size);
-  width: var(--cover-size);
-  transition: background 0.3s;
-  background: var(--SPlayer-gray) url(/default_cover.jpeg) center/cover;
-}
+    .music-cover {
+      min-width: var(--head-height);
+      height: var(--cover-size);
+      width: var(--cover-size);
+      transition: background 0.3s;
+      background: var(--SPlayer-gray) url(/default_cover.jpeg) center/cover;
+    }
 
-.music-time {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: var(--head-height);
-  height: var(--head-height);
-  line-height: var(--head-height);
-  text-align: center;
-  color: #fff;
-  opacity: 0; /* TODO 0 */
-  background: rgba(0, 0, 0, 0.5);
-  transition: opacity 0.3s;
-}
+    .music-time {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--head-height);
+      height: var(--head-height);
+      line-height: var(--head-height);
+      text-align: center;
+      color: #fff;
+      opacity: 0; /* TODO 0 */
+      background: rgba(0, 0, 0, 0.5);
+      transition: opacity 0.3s;
 
-.music-time:hover {
-  opacity: 1;
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
 }
 </style>
