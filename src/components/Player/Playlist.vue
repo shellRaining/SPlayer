@@ -5,8 +5,7 @@ import { usePlayerStateStore } from '@/store/playerState';
 
 const store = usePlayerStateStore();
 const { playerState } = storeToRefs(store);
-
-const { selectMusic } = store
+const { selectMusic, remove } = store;
 
 const deleteIcon = new URL('@/components/icons/list/delete.svg', import.meta.url).href;
 </script>
@@ -24,8 +23,7 @@ const deleteIcon = new URL('@/components/icons/list/delete.svg', import.meta.url
           <span class="item-index">{{ i }}</span>
           <span class="item-title">{{ music.title }}</span>
           <span class="item-artist">{{ music.artist }}</span>
-          <!-- <img :src="deleteIcon" alt="x" class="item-btn" @click.stop="remove(i)" /> -->
-          <img :src="deleteIcon" alt="x" class="item-btn" />
+          <img :src="deleteIcon" alt="x" class="item-btn" @click.stop="remove(i)" />
         </div>
       </li>
     </TransitionGroup>

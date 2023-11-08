@@ -12,7 +12,7 @@ import ProcessBar from './Player/progressBar.vue';
 
 const store = usePlayerStateStore();
 const { playerState, player } = storeToRefs(store);
-const { toggleVolume, toggleMode, toggleList, relativeJump, toggleMusic, error } = store;
+const { toggleVolume, toggleMode, toggleList, relativeJump, error } = store;
 
 const cover = ref<HTMLDivElement | null>();
 
@@ -54,14 +54,6 @@ const artist = computed(() => {
 });
 
 watch(
-  () => playerState.value.stop,
-  (stop) => {
-    if (player.value == null || playerState.value.idx == -1) return;
-    stop ? player.value.pause() : player.value.play();
-  }
-);
-
-watch(
   () => playerState.value.settings.volume,
   (newVal) => {
     if (player.value == null) return;
@@ -89,50 +81,18 @@ watch(
   }
 );
 
-// reset the whole player, include audio
-function resetPlayer() {
-  if (player.value == null || cover.value == null) return;
-
-  function resetPlayerState() {
-    playerState.value.idx = -1;
-    playerState.value.stop = true;
-    playerState.value.error = false;
-    playerState.value.progress = 0;
-    playerState.value.settings.volume = volume.max;
-    playerState.value.settings.list = false;
-    playerState.value.settings.mode = mode.loopAll;
+// TODO: the order of execution is:
+watch(
+  () => playerState.value.stop,
+  (stop) => {
+    if (player.value == null || playerState.value.idx == -1 || player.value.src == '') return;
+    stop ? player.value.pause() : player.value.play();
   }
-
-  resetPlayerState();
-  player.value.pause();
-  cover.value.style.setProperty('background-image', 'url(/default_cover.jpeg)');
-}
-
-// there are four cases:
-// 1. idx == curIdx, and not the end
-// 2. idx == curIdx, but the end
-// 3. idx < curIdx
-// 4. idx > curIdx
-function remove(idx: number) {
-  if (player.value == null) return;
-
-  const len = playerState.value.playList.length;
-  if (len == 1) {
-    resetPlayer();
-  }
-
-  playerState.value.playList.splice(idx, 1);
-  if (idx == playerState.value.idx) {
-    // if the music to be removed is the current music, jump to the next music
-    relativeJump(0, { stop: playerState.value.stop });
-  } else if (idx < playerState.value.idx) {
-    playerState.value.idx -= 1;
-  }
-}
+);
 
 watch(
   () => playerState.value.idx,
-  (curIdx) => {
+  (curIdx, oldIdx) => {
     if (player.value == null || cover.value == null) return;
 
     // change the background attr in .music-cover class
@@ -142,7 +102,12 @@ watch(
 
     const musicPath = new URL(curMusicInfo.link, import.meta.url).href;
     player.value.src = musicPath;
-    playerState.value.stop ? player.value.pause() : player.value.play();
+
+    if (oldIdx == -1) {
+      player.value.play();
+    } else {
+      playerState.value.stop ? player.value.pause() : player.value.play();
+    }
   }
 );
 

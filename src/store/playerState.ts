@@ -96,9 +96,10 @@ export const usePlayerStateStore = defineStore('playerState', () => {
 
     playerState.value.idx = idx;
     playerState.value.stop = opts?.stop ?? false;
+    playerState.value.error = false;
     playerState.value.progress = 0;
     playerState.value.bufferedProgress = 0;
-    playerState.value.error = false;
+    playerState.value.duration = 0;
     playerState.value.lyric = parseLrc(playerState.value.playList[idx].lyric);
   }
 
@@ -108,6 +109,37 @@ export const usePlayerStateStore = defineStore('playerState', () => {
       toggleMusic();
     } else {
       jump(idx);
+    }
+  }
+
+  // there are four cases:
+  // 1. idx == curIdx, and not the end
+  // 2. idx == curIdx, but the end
+  // 3. idx < curIdx
+  // 4. idx > curIdx
+  function remove(idx: number) {
+    if (player.value == null) return;
+
+    const len = playerState.value.playList.length;
+    if (len == 1) {
+      playerState.value.idx = -1;
+      playerState.value.stop = true;
+      playerState.value.error = false;
+      playerState.value.progress = 0;
+      playerState.value.bufferedProgress = 0;
+      playerState.value.duration = 0;
+      playerState.value.settings.volume = volume.max;
+      playerState.value.settings.list = false;
+      playerState.value.settings.mode = mode.loopAll;
+      return;
+    }
+
+    playerState.value.playList.splice(idx, 1);
+    if (idx == playerState.value.idx) {
+      // if the music to be removed is the current music, jump to the next music
+      relativeJump(0, { stop: playerState.value.stop });
+    } else if (idx < playerState.value.idx) {
+      playerState.value.idx -= 1;
     }
   }
 
@@ -126,6 +158,7 @@ export const usePlayerStateStore = defineStore('playerState', () => {
     toggleList,
     relativeJump,
     jump,
+    remove,
     error,
     selectMusic,
   };
