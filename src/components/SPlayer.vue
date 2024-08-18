@@ -36,7 +36,6 @@ watch(
   (curMode) => {
     if (player.value == null) return;
 
-    // TODO: not compare two objects directly
     const curPlayList = playerState.value.playList;
     if (curMode.id == mode.loopSingle.id) {
       curPlayList.sort((v) => v.id);
@@ -50,7 +49,6 @@ watch(
   }
 );
 
-// TODO: the order of execution is:
 watch(
   () => playerState.value.stop,
   (stop) => {
@@ -101,7 +99,6 @@ const musicCoverBg = ref({
 });
 </script>
 
-<!-- TODO: use json to contain the path and info of svg -->
 <template>
   <div class="container">
     <div class="sp-header">
@@ -113,8 +110,6 @@ const musicCoverBg = ref({
     </div>
     <Playlist />
     <Lyric />
-    <!-- TODO: fix passed props -->
-    <!-- TODO: loadeddata -->
     <audio
       ref="player"
       @loadeddata="loadedData"

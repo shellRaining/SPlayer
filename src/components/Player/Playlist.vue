@@ -47,8 +47,6 @@ ul {
 }
 
 .list-show {
-  /* TODO: why 15em */
-  /* max-height: 15em; */
   max-height: 50vh;
 }
 

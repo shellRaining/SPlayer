@@ -44,8 +44,6 @@ export const usePlayerStateStore = defineStore('playerState', () => {
   // jump to the music that idx = current idx + offset(could be negative and out of range)
   function relativeJump(offset: number, opts?: { stop?: boolean }) {
     if (playerState.value.playList.length == 0) return;
-    // if (player.value == null || playerState.value.idx == -1) return;
-    // TODO: need change
     if (playerState.value.idx == -1) {
       jump(0, { stop: false });
       return;

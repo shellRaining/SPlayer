@@ -28,7 +28,6 @@ const curLyric = computed(() => {
 
 <template>
   <div class="sp-lyric">
-    <!-- TODO: all info should be calc by state... -->
     <span>{{ curLyric }}</span>
   </div>
 </template>
